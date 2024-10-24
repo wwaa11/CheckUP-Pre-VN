@@ -1,24 +1,25 @@
 @extends('layouts.app')
 @section('content')
-<div class="flex">
-    <div class="m-auto mt-6 shadow-lg p-6 mb-6 w-full md:w-3/4">
-        <div class="mb-3">
-            {{ $text->name }} : {{ $hnDetail->name }} ( {{ $hnDetail->HN }} )
-        </div>
-        <div class="mb-3">
-            {{ $text->app_no }} : {{ $hnDetail->appNo }}
-        </div>
-        <div class="mb-3">
-            {{ $text->app_date }} : {{ $hnDetail->appDate }}
-        </div>
-        <div class="mb-3">
-            {{ $text->app_time }} : {{ $hnDetail->appTime }}
-        </div>
-        <div class="m-auto flex-grow mt-6" id="checkLo">
-            <div class="text-center cursor-pointer p-3 font-bold rounded border-2 border-blue-600 text-blue-600 mt-3">{{ $text->range_check }}</div>
+    <div class="flex">
+        <div class="m-auto mt-6 shadow-lg p-6 mb-6 w-full md:w-3/4">
+            <div class="mb-3">
+                {{ $text->name }} : {{ $hnDetail->name }} ( {{ $hnDetail->HN }} )
+            </div>
+            <div class="mb-3">
+                {{ $text->app_no }} : {{ $hnDetail->appNo }}
+            </div>
+            <div class="mb-3">
+                {{ $text->app_date }} : {{ $hnDetail->appDate }}
+            </div>
+            <div class="mb-3">
+                {{ $text->app_time }} : {{ $hnDetail->appTime }}
+            </div>
+            <div class="m-auto flex-grow mt-6" id="checkLo">
+                <div class="text-center cursor-pointer p-3 font-bold rounded border-2 border-blue-600 text-blue-600 mt-3">
+                    {{ $text->range_check }}</div>
+            </div>
         </div>
     </div>
-</div>
 @endsection
 @section('scripts')
     <script>
@@ -77,7 +78,7 @@
         }
 
         async function selectItem(hn) {
-            wait = [500, 800, 1000, 1200, 1500].random()
+            wait = [1000, 1200, 1500, 1800, 2000].random()
             await sleep(wait)
 
             if ('{{ session('langSelect') }}' == "TH") {

@@ -523,7 +523,7 @@ class CheckupController extends Controller
         $masterHN = $request->input;
         if ($request->lat == '-' || $request->log == '-') {
 
-            return abort();
+            return abort(400);
         }
         $outputDistant = $this->latlogCheck($request->lat, $request->log);
         if ($outputDistant > $this->LocationDistant) {
