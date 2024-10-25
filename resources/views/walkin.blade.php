@@ -1,141 +1,150 @@
 @extends('layouts.app')
 @section('content')
-<div class="w-full md:w-2/4 m-auto">
-    <div class="py-3 text-center" id="searchSection">
-        <div style="color: #4db1ab" class="mb-1 text-center pb-3 text-3xl">
-            @if (session('langSelect') == 'TH')
-                ตรวจสอบข้อมูล
-            @else
-                Check information
-            @endif
-        </div>
-        <img class="m-auto" width="150" src="{{ asset('images/check2.jpg') }}">
-        <div><i class="fa-regular fa-address-card"></i>
-            @if (session('langSelect') == 'TH')
-                หมายเลขบัตรประชาชน
-            @else
-                Thai ID Card
-            @endif
-        </div>
-        <div>Passport</div>
-        <div><i class="fa-solid fa-phone"></i>
-            @if (session('langSelect') == 'TH')
-                เบอร์โทรศัพท์
-            @else
-                Mobile Phone
-            @endif
-        </div>
-        <input type="text" id="inputSearch"
-            placeholder="@if (session('langSelect') == 'TH') หมายเลขบัตรประชาชน, เบอร์โทรศัพท์ @else Thai ID Card, Mobile Number @endif"
-            autocomplete="off" class="text-center bg-green-200 rounded w-3/4 p-3 m-3 border-2 border-blue-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
-        <div id="btnOTPCheck" onclick="otpCheck()" class="w-3/4 cursor-pointer p-3 m-auto text-center rounded border-2 text-green-600 border-green-600">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            @if (session('langSelect') == 'TH')
-                ค้นหา
-            @else
-                Search
-            @endif
-        </div>
-        <div id="btnOTPChecking" class="hidden w-3/4 p-3 m-auto text-center rounded bg-gray-200">
-            @if (session('langSelect') == 'TH')
-                กำลังค้นหา
-            @else
-                Searching...
-            @endif
-        </div>
-    </div>
-    <div class="hidden py-3 text-center" id="otpSection">
-        <div style="font-size: 2rem; color: #4db1ab" class="mb-1 text-center pt-3 pb-3">
-            @if (session('langSelect') == 'TH')
-                กรุณายืนยันตัวตน
-            @else
-                Please verify your identity.
-            @endif
-        </div>
-        <img class="m-auto" width="150" src="{{ asset('images/check.jpg') }}">
-        <div class="text-center mb-1">
-            <div>
+    <div class="w-full md:w-2/4 m-auto">
+        <div class="py-3 text-center" id="searchSection">
+            <div style="color: #4db1ab" class="mb-1 text-center pb-3 text-3xl">
                 @if (session('langSelect') == 'TH')
-                    รหัส OTP ได้ส่งไปยังหมายเลขโทรศัพท์
+                    ตรวจสอบข้อมูล
                 @else
-                    A OTP has been send to
+                    Check information
                 @endif
             </div>
-            <div>xx-xxxx-<span id="OTP_Phone"></span></div>
-            <div class="">
-                <div class="mb-3">
+            <img class="m-auto" width="150" src="{{ asset('images/check2.jpg') }}">
+            <div><i class="fa-regular fa-address-card"></i>
+                @if (session('langSelect') == 'TH')
+                    หมายเลขบัตรประชาชน
+                @else
+                    Thai ID Card
+                @endif
+            </div>
+            <div>Passport</div>
+            <div><i class="fa-solid fa-phone"></i>
+                @if (session('langSelect') == 'TH')
+                    เบอร์โทรศัพท์
+                @else
+                    Mobile Phone
+                @endif
+            </div>
+            <input type="text" id="inputSearch"
+                placeholder="@if (session('langSelect') == 'TH') หมายเลขบัตรประชาชน, เบอร์โทรศัพท์ @else Thai ID Card, Mobile Number @endif"
+                autocomplete="off"
+                class="text-center bg-green-200 rounded w-3/4 p-3 m-3 border-2 border-blue-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+            <div id="btnOTPCheck" onclick="otpCheck()"
+                class="w-3/4 cursor-pointer p-3 m-auto text-center rounded border-2 text-green-600 border-green-600">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                @if (session('langSelect') == 'TH')
+                    ค้นหา
+                @else
+                    Search
+                @endif
+            </div>
+            <div id="btnOTPChecking" class="hidden w-3/4 p-3 m-auto text-center rounded bg-gray-200">
+                @if (session('langSelect') == 'TH')
+                    กำลังค้นหา
+                @else
+                    Searching...
+                @endif
+            </div>
+        </div>
+        <div class="hidden py-3 text-center" id="otpSection">
+            <div style="font-size: 2rem; color: #4db1ab" class="mb-1 text-center pt-3 pb-3">
+                @if (session('langSelect') == 'TH')
+                    กรุณายืนยันตัวตน
+                @else
+                    Please verify your identity.
+                @endif
+            </div>
+            <img class="m-auto" width="150" src="{{ asset('images/check.jpg') }}">
+            <div class="text-center mb-1">
+                <div>
                     @if (session('langSelect') == 'TH')
-                        ยืนยันการส่งไปที่เบอร์
+                        รหัส OTP ได้ส่งไปยังหมายเลขโทรศัพท์
                     @else
-                        Send OTP to number
+                        A OTP has been send to
                     @endif
                 </div>
-                <div id="resend_otp" class="m-auto p-3 w-3/4 border-2 text-blue-600 border-blue-600 rounded cursor-pointer" onclick="sendOTP()">
+                <div>xx-xxxx-<span id="OTP_Phone"></span></div>
+                <div class="">
+                    <div class="mb-3">
+                        @if (session('langSelect') == 'TH')
+                            ยืนยันการส่งไปที่เบอร์
+                        @else
+                            Send OTP to number
+                        @endif
+                    </div>
+                    <div id="resend_otp"
+                        class="m-auto p-3 w-3/4 border-2 text-blue-600 border-blue-600 rounded cursor-pointer"
+                        onclick="sendOTP()">
+                        @if (session('langSelect') == 'TH')
+                            ขอรับ OTP
+                        @else
+                            Request OTP
+                        @endif
+                    </div>
+                    <div id="resend_otp_dis" class="hidden m-auto p-3 w-3/4 bg-gray-200 rounded">
+                        @if (session('langSelect') == 'TH')
+                            กรุณารอสักครู่
+                        @else
+                            Please wait...
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="refID" value="-">
+            <input
+                class="mt-3 text-center bg-green-200 mb-3 m-auto w-3/4 placeholder:text-red-600 text-red-600 p-3 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500"
+                type="text" pattern="\d*" maxlength="6" id="inputOpt" placeholder="OTP" autocomplete="one-time-code">
+            <div class="mt-3">
+                <div id="otp_resultcheck" onclick="resultCheck()"
+                    class="m-auto p-3 w-3/4 border-2 text-green-600 border-green-600 rounded cursor-pointer">
                     @if (session('langSelect') == 'TH')
-                        ขอรับ OTP
+                        ยืนยัน
                     @else
-                        Request OTP
+                        Verify
                     @endif
                 </div>
-                <div id="resend_otp_dis" class="hidden m-auto p-3 w-3/4 bg-gray-200 rounded">
+                <div id="otp_resultchecking" class="hidden m-auto p-3 w-3/4 bg-gray-200 rounded">
                     @if (session('langSelect') == 'TH')
-                        กรุณารอสักครู่
+                        กำลังตรวจสอบ
                     @else
-                        Please wait...
+                        Verifying..
+                    @endif
+                </div>
+            </div>
+            <div class="mt-3" id="cantOTP">
+                <div onclick="selectItem('-','OTP')"
+                    class="m-auto p-3 w-3/4 text-red-400 rounded cursor-pointer font-bold underline underline-offset-1">
+                    @if (session('langSelect') == 'TH')
+                        หมายเลขรับ OTP ไม่ถูกต้อง
+                    @else
+                        Phone number not correct.
                     @endif
                 </div>
             </div>
         </div>
-        <input type="hidden" id="refID" value="-">
-        <input class="mt-3 text-center bg-green-200 mb-3 m-auto w-3/4 placeholder:text-red-600 text-red-600 p-3 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500" type="text" pattern="\d*" maxlength="6" id="inputOpt" placeholder="OTP" autocomplete="one-time-code" >
-        <div class="mt-3">
-            <div id="otp_resultcheck" onclick="resultCheck()" class="m-auto p-3 w-3/4 border-2 text-green-600 border-green-600 rounded cursor-pointer">
-                @if (session('langSelect') == 'TH')
-                    ยืนยัน
-                @else
-                    Verify
-                @endif
-            </div>
-            <div id="otp_resultchecking" class="hidden m-auto p-3 w-3/4 bg-gray-200 rounded">
-                @if (session('langSelect') == 'TH')
-                    กำลังตรวจสอบ
-                @else
-                    Verifying..
-                @endif
-            </div>
-        </div>
-        <div class="mt-3" id="cantOTP">
-            <div onclick="selectItem('-','OTP')" class="m-auto p-3 w-3/4 text-red-400 rounded cursor-pointer font-bold underline underline-offset-1">
-                @if (session('langSelect') == 'TH')
-                    หมายเลขรับ OTP ไม่ถูกต้อง
-                @else
-                    Phone number not correct.
-                @endif
-            </div>
-        </div>
-    </div>
-    <div class="hidden" id="resultSection">
-        <div class="grid grid-cols-2 p-3 m-auto">
-            <div onclick="searchAgain()" class="p-3 text-red-400 font-bold cursor-pointer">
-                <i class="fa-solid fa-angle-left"></i>
-                @if (session('langSelect') == 'TH')
-                    ค้นหาอีกครั้ง
-                @else
-                    Search Again
-                @endif
-            </div>
-            <div class="text-center p-3 font-bold">
-                <span class="">
+        <div class="hidden" id="resultSection">
+            <div class="grid grid-cols-2 p-3 m-auto">
+                <div onclick="searchAgain()" class="p-3 text-red-400 font-bold cursor-pointer">
+                    <i class="fa-solid fa-angle-left"></i>
                     @if (session('langSelect') == 'TH')
-                        ผลการค้นหา
+                        ค้นหาอีกครั้ง
                     @else
-                        Result
+                        Search Again
                     @endif
-                </span> : <span id="searchInput" class="text-blue-600"></span></div>
+                </div>
+                <div class="text-center p-3 font-bold">
+                    <span class="">
+                        @if (session('langSelect') == 'TH')
+                            ผลการค้นหา
+                        @else
+                            Result
+                        @endif
+                    </span> : <span id="searchInput" class="text-blue-600"></span>
+                </div>
             </div>
-        <div id="searchResult"></div>
+            <div id="searchResult"></div>
+        </div>
     </div>
-</div>
 @endsection
 @section('scripts')
     <script>
@@ -143,7 +152,7 @@
         var mytype = null
         var lat = '-';
         var log = '-';
-        
+
         $(document).ready(function() {
             navigator.geolocation.getCurrentPosition(success, error, {
                 enableHighAccuracy: true,
@@ -245,8 +254,7 @@
                 const res = await axios.post("walkin/otp", formData, {
                     "Content-Type": "multipart/form-data"
                 }).then((res) => {
-                    if (res.data.status == 'success')
-                    {
+                    if (res.data.status == 'success') {
                         $('#refID').val(res.data.refid);
                         $('#searchSection').hide();
                         $('#otpSection').show();
@@ -356,7 +364,7 @@
             }
             if ('{{ session('langSelect') }}' == "TH") {
                 t_title = "ยืนยันการรับคิว"
-                btn_confirm = "ตกลง"
+                btn_confirm = "รับคิว"
                 btn_can = "ยกเลิก"
                 wait = "กรุณารอสักครู่"
                 if (type == 'M' || type == "OTP") {

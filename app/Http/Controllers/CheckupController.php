@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 
 class CheckupController extends Controller
 {
-    private $LocationDistant = 15.5;
+    private $LocationDistant = 0.5;
 
     private function lang($text)
     {
@@ -224,7 +224,7 @@ class CheckupController extends Controller
         $getNumber->$typeQueue = $number;
         $getNumber->save();
 
-        Log::channel('insert')->notice('Pre ' . $queueNumber . ' to ' . $typeQueue);
+        Log::channel('daily')->notice('get ' . $queueNumber . ' to ' . $typeQueue);
         $arrayQueue = Time::where('station', 'checkup')->where('type', $typeQueue)->first();
         $arrayQueue->list = json_decode($arrayQueue->list);
         $temp_list = $arrayQueue->list;
@@ -232,7 +232,7 @@ class CheckupController extends Controller
             array_push($temp_list, $queueNumber);
             $arrayQueue->list = json_encode($temp_list);
             $arrayQueue->save();
-            Log::channel('insert')->notice('Suc ' . $queueNumber . ' to ' . $typeQueue);
+            Log::channel('daily')->notice('insert ' . $queueNumber . ' to ' . $typeQueue);
         }
 
         return $queueNumber;
@@ -240,7 +240,7 @@ class CheckupController extends Controller
     public function requestQueue(Request $request)
     {
         $hn = $request->hn;
-        Log::channel('debug')->notice($hn . ' ' . $request->headers->get('referer'));
+        Log::channel('daily')->notice($hn . ' ' . $request->headers->get('referer'));
 
         $iswalkinNodata = 0;
         if (substr($hn, 0, 6) == "walkin") {
