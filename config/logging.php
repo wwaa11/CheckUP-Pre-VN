@@ -65,6 +65,24 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'line' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/LineAPI.log'),
+            'level' => 'debug',
+        ],
+
+        'insert' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/Insert.log'),
+            'level' => 'debug',
+        ],
+
+        'debug' => [
+            'driver' => 'single',
+            'path' => storage_path('logs/Debug.log'),
+            'level' => 'debug',
+        ],
+        
         'daily' => [
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
@@ -126,6 +144,8 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+
+
 
     ],
 

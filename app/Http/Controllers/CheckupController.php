@@ -570,20 +570,19 @@ class CheckupController extends Controller
         $html = '';
         $findWalkinMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $masterHN)->where('name', 'Walkin')->whereNull('success_by')->first();
         if ($findWalkinMaster !== null) {
+            $html .= '<div class="shadow m-3 p-3">';
+            $html .= '<div class="grid grid-cols-2">';
+            $html .= '<span class="mb-2">' . $this->lang('name') . '</span>';
+            $html .= '<span class="mb-2">' . $findWalkinMaster->name . ' ( ' . $findWalkinMaster->hn . ' )</span>';
+            $html .= '<span class="mb-2">' . $this->lang('dob') . '</span>';
+            $html .= '<span class="mb-2">-</span>';
+            $html .= '<span class="mb-2">' . $this->lang('number') . '</span>';
+            $html .= '<span class="mb-2 text-queuenumber text-end">' . $findWalkinMaster->number . '</span>';
+            $html .= '</div>';
             $html .= '<a href="walkin/viewqueue/' . $findWalkinMaster->hn . '">';
-            $html .= '<div class="m-3 position-relative">';
-            $html .= '<div class="row">';
-            $html .= '<span class="col-3">' . $this->lang('name') . '</span>';
-            $html .= '<span class="col-9">' . $findWalkinMaster->name . ' ( ' . $findWalkinMaster->hn . ' )</span>';
-            $html .= '<span class="col-3">' . $this->lang('dob') . '</span>';
-            $html .= '<span class="col-9">-</span>';
-            $html .= '<span class="col-3">' . $this->lang('number') . '</span>';
-            $html .= '<span class="col-9 text-queuenumber text-end">' . $findWalkinMaster->number . '</span>';
-            $html .= '</div>';
-            $html .= '<div style="height: 50px;"></div>';
-            $html .= '<div class="rounded-l p-2 text-center">' . $this->lang('check') . '</div>';
-            $html .= '</div>';
+            $html .= '<div class="border-2 text-green-600 border-green-600 rounded-l p-2 text-center">'.$this->lang('check').'</div>';
             $html .= '</a>';
+            $html .= '</div>';
         } else {
             $html .= '<div id="sleItem" onclick="selectItem(\'walkin' . $masterHN . '\',\'M\')" class="row m-3 p-3 text-center" style="border: #ff7735 3px solid; font-size: 1.5rem; color: #ff7735; cursor: pointer;">';
             $html .= '<div>' . $this->lang('not_found') . '</div>';
@@ -610,18 +609,19 @@ class CheckupController extends Controller
             $html = '';
             $findWalkinMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $masterHN)->where('name', 'Walkin')->whereNull('success_by')->first();
             if ($findWalkinMaster !== null) {
-                $html = '<a href="walkin/viewqueue/' . $findWalkinMaster->hn . '">';
-                $html .= '  <div class="grid grid-cols-2 shadow p-3">';
-                $html .= '      <span >' . $this->lang('name') . '</span>';
-                $html .= '      <span >' . $findWalkinMaster->name . ' ( ' . $findWalkinMaster->hn . ' )</span>';
-                $html .= '      <span >' . $this->lang('dob') . '</span>';
-                $html .= '      <span >-</span>';
-                $html .= '      <span >' . $this->lang('number') . '</span>';
-                $html .= '      <span class="text-end font-bold text-red-600 text-3xl mb-3">' . $findWalkinMaster->number . '</span>';
-                $html .= '      <div class="col-span-2 border-2 text-green-600 bg-green-600 rounded-l p-2 text-center">' . $this->lang('check') . '</div>';
+                $html .= '<div class="shadow p-3 m-3">';
+                $html .= '  <div class="grid grid-cols-2">';
+                $html .= '      <span class="mb-2">' . $this->lang('name') . '</span>';
+                $html .= '      <span class="mb-2">' . $findWalkinMaster->name . ' ( ' . $findWalkinMaster->hn . ' )</span>';
+                $html .= '      <span class="mb-2">' . $this->lang('dob') . '</span>';
+                $html .= '      <span class="mb-2">-</span>';
+                $html .= '      <span class="mb-2">' . $this->lang('number') . '</span>';
+                $html .= '      <span class="mb-2 text-end font-bold text-red-600 text-2xl">' . $findWalkinMaster->number . '</span>';
                 $html .= '  </div>';
-                $html .= '</div>';
+                $html .= '<a href="walkin/viewqueue/' . $findWalkinMaster->hn . '">';
+                $html .= '  <div class="border-2 text-green-600 bg-green-600 rounded-l p-2 text-center">' . $this->lang('check') . '</div>';
                 $html .= '</a>';
+                $html .= '</div>';
             }
             // Search for HN
             $getHN = DB::connection('SSB')
@@ -669,7 +669,7 @@ class CheckupController extends Controller
                             ->where('HNAPPMNT_HEADER.HN', $item->HN)
                             ->first();
 
-                        $html .= '<div class="shadow-lg p-3">';
+                        $html .= '<div class="shadow p-3 m-3">';
                         $html .= '<div class="grid grid-cols-2">';
                         $html .= '<span class="mb-2">' . $this->lang('name') . '</span>';
                         $html .= '<span class="mb-2">' . $this->formatName($item->FirstName, $item->LastName) . ' ( ' . $item->HN . ' )</span>';
@@ -677,15 +677,15 @@ class CheckupController extends Controller
                         $html .= '<span class="mb-2">' . date('d M Y', $dob) . ' ( ' . (date('Y', $dob) + 543) . ')' . '</span>';
                         $html .= '<span class="mb-2">' . $this->lang('app_no') . '</span>';
                         if($myApp !== null){
-                            $html .= '<span class="text-end font-bold text-red-600 text-3xl mb-3">' . $myApp->AppointmentNo . '</span>';
+                            $html .= '<span class="text-end font-bold text-red-600 text-2xl mb-2">' . $myApp->AppointmentNo . '</span>';
                         }else{
-                            $html .= '<span class="text-end font-bold text-red-600 text-3xl mb-3">' . $this->lang('no_app') . '</span>';
+                            $html .= '<span class="text-end font-bold text-red-600 text-2xl mb-2">' . $this->lang('no_app') . '</span>';
                         }
                         $html .= '</div>';
 
                         if($myApp == null){
                             $html .= '<a href="walkin/viewapp/' . $hashHN . '">';
-                            $html .= '<div class="col-span-2 m-3 border-2 text-blue-600 border-blue-600 rounded-l p-2 text-center cursor-pointer">'. $this->lang('check_app') . '</div>';
+                            $html .= '<div class="m-3 border-2 text-blue-600 border-blue-600 rounded-l p-2 text-center cursor-pointer">'. $this->lang('check_app') . '</div>';
                             $html .= '</a>';
                         }
                         $html .= '<div id="sleItem"';
@@ -694,21 +694,23 @@ class CheckupController extends Controller
                         }else{
                             $html .= 'onclick="selectItem(\'' . $item->HN . '\',\'M\')"';
                         }
-                        $html .= 'class="col-span-2 m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer">' . $this->lang('get_queue');
+                        $html .= 'class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer">' . $this->lang('get_queue');
                         $html .= '</div>';
                         $html .= '</div>';
                     } else {
-                        $html .= '<a href="walkin/viewqueue/' . $item->HN . '">';
-                        $html .= '<div class="grid grid-cols-2 shadow p-3">';
-                        $html .= '<span >' . $this->lang('name') . '</span>';
-                        $html .= '<span >' . $this->formatName($item->FirstName, $item->LastName) . ' ( ' . $item->HN . ' )</span>';
-                        $html .= '<span >' . $this->lang('dob') . '</span>';
-                        $html .= '<span >' . date('d M Y', $dob) . ' ( ' . (date('Y', $dob) + 543) . ' )' . '</span>';
-                        $html .= '<span >' . $this->lang('number') . '</span>';
-                        $html .= '<span class="text-end font-bold text-red-600 text-3xl mb-3">' . $checkMaster->number . '</span>';
-                        $html .= '<div class="col-span-2 border-2 text-green-600 border-green-600 rounded-l p-2 text-center">' . $this->lang('check') . '</div>';
+                        $html .= '<div class="shadow p-3 m-3">';
+                        $html .= '  <div class="grid grid-cols-2">';
+                        $html .= '    <span >' . $this->lang('name') . '</span>';
+                        $html .= '    <span >' . $this->formatName($item->FirstName, $item->LastName) . ' ( ' . $item->HN . ' )</span>';
+                        $html .= '    <span >' . $this->lang('dob') . '</span>';
+                        $html .= '    <span >' . date('d M Y', $dob) . ' ( ' . (date('Y', $dob) + 543) . ' )' . '</span>';
+                        $html .= '    <span >' . $this->lang('number') . '</span>';
+                        $html .= '    <span class="text-end font-bold text-red-600 text-2xl mb-3">' . $checkMaster->number . '</span>';
+                        $html .= '  </div>';
+                        $html .= '  <a href="walkin/viewqueue/' . $item->HN . '">';
+                        $html .= '  <div class="border-2 text-green-600 border-green-600 rounded-l p-2 text-center">'.$this->lang('check').'</div>';
+                        $html .= '  </a>';
                         $html .= '</div>';
-                        $html .= '</a>';
                     }
                 }
             }
