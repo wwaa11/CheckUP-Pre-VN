@@ -452,7 +452,7 @@ class CheckupController extends Controller
         $data = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
         if ($data == null) {
 
-            return redirect('walkin');
+            return redirect(env('APP_URL').'/walkin');
         }
 
         return view('myQueue')->with(compact('data'));
@@ -727,7 +727,7 @@ class CheckupController extends Controller
         if ($getHN == null) {
             $hn = $hashHN;
 
-            return redirect('walkin');
+            return redirect(env('APP_URL').'/walkin');
         } else {
             $hn = $getHN->HN;
         }

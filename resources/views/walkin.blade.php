@@ -211,7 +211,7 @@
             }, 15 * 1000);
             const formData = new FormData();
             formData.append('ref_id', refID);
-            const res = await axios.post("walkin/sendotp", formData, {
+            const res = await axios.post("{{ env('APP_URL') }}/walkin/sendotp", formData, {
                 "Content-Type": "multipart/form-data"
             }).then((res) => {
                 $('#inputOpt').attr("placeholder", 'Ref : ' + res.data.ref);
@@ -251,7 +251,7 @@
                 formData.append('input', input);
                 formData.append('lat', lat);
                 formData.append('log', log);
-                const res = await axios.post("walkin/otp", formData, {
+                const res = await axios.post("{{ env('APP_URL') }}/walkin/otp", formData, {
                     "Content-Type": "multipart/form-data"
                 }).then((res) => {
                     if (res.data.status == 'success') {
@@ -320,7 +320,7 @@
                 formData.append('input', input);
                 formData.append('otp', otp);
                 formData.append('ref', refID);
-                const res = await axios.post("walkin/result", formData, {
+                const res = await axios.post("{{ env('APP_URL') }}/walkin/result", formData, {
                     "Content-Type": "multipart/form-data"
                 }).then((res) => {
                     if (res.data.status == 'otpid') {
@@ -407,10 +407,10 @@
 
                     const formData = new FormData();
                     formData.append('hn', hn);
-                    const res = await axios.post("walkin/genQueue", formData, {
+                    const res = await axios.post("{{ env('APP_URL') }}/walkin/genQueue", formData, {
                         "Content-Type": "multipart/form-data"
                     }).then((res) => {
-                        window.location.href = '/walkin/viewqueue/' + hn
+                        window.location.href = '{{ env('APP_URL') }}/walkin/viewqueue/' + hn
                     })
                 } else {
                     window.location.reload()

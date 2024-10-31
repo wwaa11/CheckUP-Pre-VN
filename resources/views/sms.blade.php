@@ -69,7 +69,7 @@
                 formData.append('hn', {{ $hnDetail->HN }});
                 formData.append('lat', lat);
                 formData.append('log', log);
-                const res = await axios.post("/checkLocation", formData, {
+                const res = await axios.post("{{ env('APP_URL') }}/checkLocation", formData, {
                     "Content-Type": "multipart/form-data"
                 }).then((res) => {
                     $('#checkLo').html(res.data.html)
@@ -99,7 +99,7 @@
             });
             const formData = new FormData();
             formData.append('hn', hn);
-            const res = await axios.post("genQueue", formData, {
+            const res = await axios.post("{{ env('APP_URL') }}/sms/genQueue", formData, {
                 "Content-Type": "multipart/form-data"
             }).then((res) => {
                 console.log(res)
@@ -111,7 +111,7 @@
                         allowEscapeKey: false,
                         showConfirmButton: false
                     });
-                    window.location.href = '/sms/viewqueue/' + hn
+                    window.location.href = '{{ env('APP_URL') }}/sms/viewqueue/' + hn
                 } else {
                     Swal.fire({
                         title: 'Error.',
