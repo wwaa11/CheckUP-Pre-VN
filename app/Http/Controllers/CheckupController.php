@@ -14,6 +14,12 @@ class CheckupController extends Controller
 {
     private $LocationDistant = 0.5;
 
+    public function test()
+    {
+        
+
+    }
+
     private function lang($text)
     {
         if (session("langSelect") == 'ENG') {
@@ -211,7 +217,6 @@ class CheckupController extends Controller
 
     public function genQueue($typeQueue)
     {
-        // Check Number Array
         $getNumber = Number::where('date', date('Y-m-d'))->first();
         if ($getNumber == null) {
             $newDate = new Number;
