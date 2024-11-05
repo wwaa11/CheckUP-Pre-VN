@@ -17,22 +17,7 @@ class CheckupController extends Controller
 
     public function test()
     {
-        $test = null;
-        $executed = RateLimiter::attempt(
-            'test',
-            $perMinute = 1,
-            function() use ($test) {
-                
-
-            }
-        );
-        if (! $executed) {
-
-            return response()->json('too many request :' , 429);
-        }else{
-
-            return response()->json('Index Check Up', 200); 
-        }
+        
     }
 
     private function lang($text)
@@ -259,130 +244,141 @@ class CheckupController extends Controller
     }
     public function requestQueue(Request $request)
     {
-        $hn = $request->hn;
-        Log::channel('daily')->notice($hn . ' ' . $request->headers->get('referer'));
-        $iswalkinNodata = 0;
-        if (substr($hn, 0, 6) == "walkin") {
-            $hn = substr($hn, 6);
-            $iswalkinNodata = 1;
-        }
-        $findMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
-        if ($findMaster !== null) {
-            Log::channel('daily')->notice($hn . ' send ' . $findMaster->number);
+        $getNumber = RateLimiter::attempt(
+            $request->hn,
+            $perMinute = 1,
+            function() use ($request) {
+                $hn = $request->hn;
+                Log::channel('daily')->notice($hn . ' ' . $request->headers->get('referer'));
+                $iswalkinNodata = 0;
+                if (substr($hn, 0, 6) == "walkin") {
+                    $hn = substr($hn, 6);
+                    $iswalkinNodata = 1;
+                }
+                $findMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
+                if ($findMaster !== null) {
+                    Log::channel('daily')->notice($hn . ' send ' . $findMaster->number);
 
-            return response()->json('success Queue Number :' . $findMaster->number, 200);
-        }
-        // Check Walkin
-        if ($iswalkinNodata == 1) {
-            // Get Queue M
-            $queueNumber = $this->genQueue('M');
+                    return response()->json('success Queue Number :' . $findMaster->number, 200);
+                }
+                // Check Walkin
+                if ($iswalkinNodata == 1) {
+                    // Get Queue M
+                    $queueNumber = $this->genQueue('M');
 
-            $master = new Master;
-            $master->app = $queueNumber;
-            $master->check_in = date('Y-m-d H:i:s');
-            $master->hn = $hn;
-            $master->name = 'Walkin';
-            $master->lang = (session("langSelect") == "TH") ? 1 : 2;
-            $master->number = $queueNumber;
-            $master->add_time = date('H:i');
-            $master->save();
-        } else {
-            // Check Appointment
-            $hnDetail = DB::connection('SSB')
-                ->table('HNPAT_INFO')
-                ->leftjoin('HNPAT_NAME', 'HNPAT_INFO.HN', '=', 'HNPAT_NAME.HN')
-                ->leftjoin('HNPAT_REF', 'HNPAT_INFO.HN', '=', 'HNPAT_REF.HN')
-                ->leftjoin('HNPAT_ADDRESS', 'HNPAT_INFO.HN', '=', 'HNPAT_ADDRESS.HN')
-                ->whereNull('HNPAT_INFO.FileDeletedDate')
-                ->where('HNPAT_INFO.HN', $hn)
-                ->where('HNPAT_ADDRESS.SuffixTiny', 1)
-                ->where('HNPAT_NAME.SuffixSmall', 0)
-                ->select(
-                    'HNPAT_INFO.HN',
-                    'HNPAT_INFO.BirthDateTime',
-                    'HNPAT_INFO.NationalityCode',
-                    'HNPAT_NAME.FirstName',
-                    'HNPAT_NAME.LastName',
-                    'HNPAT_REF.RefNo',
-                    'HNPAT_ADDRESS.MobilePhone'
-                )
-                ->first();
-
-            $myApp = DB::connection('SSB')
-                ->table('HNAPPMNT_HEADER')
-                ->whereDate('HNAPPMNT_HEADER.AppointDateTime', date('Y-m-d'))
-                ->where('HNAPPMNT_HEADER.Clinic', '1800')
-                ->where('HNAPPMNT_HEADER.HN', $hn)
-                ->orderBy('HNAPPMNT_HEADER.AppointDateTime', 'ASC')
-                ->first();
-
-            if ($myApp == null) // No Appointment get queue M
-            {
-                $queueNumber = $this->genQueue('M');
-
-                $master = new Master;
-                $master->app = 'WALKIN_' . $queueNumber;
-                $master->check_in = date('Y-m-d H:i:s');
-                $master->hn = $hn;
-                $master->name = $this->formatName($hnDetail->FirstName, $hnDetail->LastName);
-                $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
-                $master->number = $queueNumber;
-                $master->add_time = date('H:i');
-                $master->dob = $hnDetail->BirthDateTime;
-                $master->save();
-            } else // Get Appoint
-            {
-                $queueU = ['A1', 'A2', 'A3', 'A4', 'A7', 'A10', 'AI', 'AB2', 'AB3', 'AG2', 'AG3', 'A31', 'A129'];
-                if (in_array($myApp->AppmntProcedureCode1, $queueU) || in_array($myApp->AppmntProcedureCode2, $queueU) || in_array($myApp->AppmntProcedureCode3, $queueU) || in_array($myApp->AppmntProcedureCode4, $queueU) || in_array($myApp->AppmntProcedureCode5, $queueU)) {
-                    $code = 'U';
+                    $master = new Master;
+                    $master->app = $queueNumber;
+                    $master->check_in = date('Y-m-d H:i:s');
+                    $master->hn = $hn;
+                    $master->name = 'Walkin';
+                    $master->lang = (session("langSelect") == "TH") ? 1 : 2;
+                    $master->number = $queueNumber;
+                    $master->add_time = date('H:i');
+                    $master->save();
                 } else {
-                    $time = strtotime($myApp->AppointDateTime);
-                    $hours = date('H', $time);
-                    switch ($hours) {
-                        case '7':
-                            $code = 'A';
-                            break;
-                        case '8':
-                            $code = 'B';
-                            break;
-                        case '9':
-                            $code = 'C';
-                            break;
-                        case '10':
-                            $code = 'D';
-                            break;
-                        case '11':
-                            $code = 'E';
-                            break;
-                        case '12':
-                            $code = 'H';
-                            break;
-                        case 'U':
+                    // Check Appointment
+                    $hnDetail = DB::connection('SSB')
+                        ->table('HNPAT_INFO')
+                        ->leftjoin('HNPAT_NAME', 'HNPAT_INFO.HN', '=', 'HNPAT_NAME.HN')
+                        ->leftjoin('HNPAT_REF', 'HNPAT_INFO.HN', '=', 'HNPAT_REF.HN')
+                        ->leftjoin('HNPAT_ADDRESS', 'HNPAT_INFO.HN', '=', 'HNPAT_ADDRESS.HN')
+                        ->whereNull('HNPAT_INFO.FileDeletedDate')
+                        ->where('HNPAT_INFO.HN', $hn)
+                        ->where('HNPAT_ADDRESS.SuffixTiny', 1)
+                        ->where('HNPAT_NAME.SuffixSmall', 0)
+                        ->select(
+                            'HNPAT_INFO.HN',
+                            'HNPAT_INFO.BirthDateTime',
+                            'HNPAT_INFO.NationalityCode',
+                            'HNPAT_NAME.FirstName',
+                            'HNPAT_NAME.LastName',
+                            'HNPAT_REF.RefNo',
+                            'HNPAT_ADDRESS.MobilePhone'
+                        )
+                        ->first();
+
+                    $myApp = DB::connection('SSB')
+                        ->table('HNAPPMNT_HEADER')
+                        ->whereDate('HNAPPMNT_HEADER.AppointDateTime', date('Y-m-d'))
+                        ->where('HNAPPMNT_HEADER.Clinic', '1800')
+                        ->where('HNAPPMNT_HEADER.HN', $hn)
+                        ->orderBy('HNAPPMNT_HEADER.AppointDateTime', 'ASC')
+                        ->first();
+
+                    if ($myApp == null) // No Appointment get queue M
+                    {
+                        $queueNumber = $this->genQueue('M');
+
+                        $master = new Master;
+                        $master->app = 'WALKIN_' . $queueNumber;
+                        $master->check_in = date('Y-m-d H:i:s');
+                        $master->hn = $hn;
+                        $master->name = $this->formatName($hnDetail->FirstName, $hnDetail->LastName);
+                        $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
+                        $master->number = $queueNumber;
+                        $master->add_time = date('H:i');
+                        $master->dob = $hnDetail->BirthDateTime;
+                        $master->save();
+                    } else // Get Appoint
+                    {
+                        $queueU = ['A1', 'A2', 'A3', 'A4', 'A7', 'A10', 'AI', 'AB2', 'AB3', 'AG2', 'AG3', 'A31', 'A129'];
+                        if (in_array($myApp->AppmntProcedureCode1, $queueU) || in_array($myApp->AppmntProcedureCode2, $queueU) || in_array($myApp->AppmntProcedureCode3, $queueU) || in_array($myApp->AppmntProcedureCode4, $queueU) || in_array($myApp->AppmntProcedureCode5, $queueU)) {
                             $code = 'U';
-                            break;
-                        default:
-                            $code = 'M';
-                            break;
+                        } else {
+                            $time = strtotime($myApp->AppointDateTime);
+                            $hours = date('H', $time);
+                            switch ($hours) {
+                                case '7':
+                                    $code = 'A';
+                                    break;
+                                case '8':
+                                    $code = 'B';
+                                    break;
+                                case '9':
+                                    $code = 'C';
+                                    break;
+                                case '10':
+                                    $code = 'D';
+                                    break;
+                                case '11':
+                                    $code = 'E';
+                                    break;
+                                case '12':
+                                    $code = 'H';
+                                    break;
+                                case 'U':
+                                    $code = 'U';
+                                    break;
+                                default:
+                                    $code = 'M';
+                                    break;
+                            }
+                        }
+                        $queueNumber = $this->genQueue($code);
+
+                        $master = new Master;
+                        $master->app = $myApp->AppointmentNo;
+                        $master->check_in = date('Y-m-d H:i:s');
+                        $master->hn = $hn;
+                        $master->name = $this->formatName($hnDetail->FirstName, $hnDetail->LastName);
+                        $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
+                        $master->number = $queueNumber;
+                        $master->add_time = date('H:i');
+                        $master->dob = $hnDetail->BirthDateTime;
+                        $master->save();
                     }
                 }
-                $queueNumber = $this->genQueue($code);
 
-                $master = new Master;
-                $master->app = $myApp->AppointmentNo;
-                $master->check_in = date('Y-m-d H:i:s');
-                $master->hn = $hn;
-                $master->name = $this->formatName($hnDetail->FirstName, $hnDetail->LastName);
-                $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
-                $master->number = $queueNumber;
-                $master->add_time = date('H:i');
-                $master->dob = $hnDetail->BirthDateTime;
-                $master->save();
+                return $queueNumber; 
             }
+        );
+        if (! $getNumber) {
+
+            return response()->json('too many request :' , 429);
+        }else{
+
+            return response()->json('success Queue Number :' . $getNumber, 200);
         }
-
-        return response()->json('success Queue Number :' . $queueNumber, 200);
-
-
     }
 
     public function smsView($hashHN)
