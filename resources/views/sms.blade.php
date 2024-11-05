@@ -66,7 +66,7 @@
                 }, 1 * 1000);
             } else {
                 const formData = new FormData();
-                formData.append('hn', {{ $hnDetail->HN }});
+                formData.append('hn', '{{ $hnDetail->HN }}');
                 formData.append('lat', lat);
                 formData.append('log', log);
                 const res = await axios.post("{{ env('APP_URL') }}/checkLocation", formData, {
@@ -78,9 +78,6 @@
         }
 
         async function selectItem(hn) {
-            wait = [1000, 1200, 1500, 1800, 2000].random()
-            await sleep(wait)
-
             if ('{{ session('langSelect') }}' == "TH") {
                 text = "กรุณารอสักครู่"
                 err = "กรุณาลองอีกครั้ง"
@@ -97,12 +94,14 @@
                 allowEscapeKey: false,
                 showConfirmButton: false
             });
+            wait = [1000, 1200, 1500, 1800, 2000].random()
+            await sleep(wait)
+
             const formData = new FormData();
             formData.append('hn', hn);
             const res = await axios.post("{{ env('APP_URL') }}/sms/genQueue", formData, {
                 "Content-Type": "multipart/form-data"
             }).then((res) => {
-                console.log(res)
                 if (res.status == 200) {
                     Swal.fire({
                         title: 'Success.',

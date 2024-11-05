@@ -9,6 +9,7 @@ use App\Models\OTP;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 
 class CheckupController extends Controller
 {
@@ -16,8 +17,22 @@ class CheckupController extends Controller
 
     public function test()
     {
-        
+        $test = null;
+        $executed = RateLimiter::attempt(
+            'test',
+            $perMinute = 1,
+            function() use ($test) {
+                
 
+            }
+        );
+        if (! $executed) {
+
+            return response()->json('too many request :' , 429);
+        }else{
+
+            return response()->json('Index Check Up', 200); 
+        }
     }
 
     private function lang($text)
@@ -229,7 +244,7 @@ class CheckupController extends Controller
         $getNumber->$typeQueue = $number;
         $getNumber->save();
 
-        Log::channel('daily')->notice('get ' . $queueNumber . ' to ' . $typeQueue);
+        Log::channel('daily')->notice('prepare ' . $queueNumber . ' to ' . $typeQueue);
         $arrayQueue = Time::where('station', 'checkup')->where('type', $typeQueue)->first();
         $arrayQueue->list = json_decode($arrayQueue->list);
         $temp_list = $arrayQueue->list;
@@ -246,7 +261,6 @@ class CheckupController extends Controller
     {
         $hn = $request->hn;
         Log::channel('daily')->notice($hn . ' ' . $request->headers->get('referer'));
-
         $iswalkinNodata = 0;
         if (substr($hn, 0, 6) == "walkin") {
             $hn = substr($hn, 6);
@@ -254,6 +268,8 @@ class CheckupController extends Controller
         }
         $findMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
         if ($findMaster !== null) {
+            Log::channel('daily')->notice($hn . ' send ' . $findMaster->number);
+
             return response()->json('success Queue Number :' . $findMaster->number, 200);
         }
         // Check Walkin
@@ -365,6 +381,8 @@ class CheckupController extends Controller
         }
 
         return response()->json('success Queue Number :' . $queueNumber, 200);
+
+
     }
 
     public function smsView($hashHN)

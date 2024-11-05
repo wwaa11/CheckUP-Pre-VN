@@ -3,8 +3,7 @@
 use App\Http\Controllers\CheckupController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function(){ return response()->json('Index Check Up', 404); });
-// Route::get('/', [CheckupController::class, 'test']);
+Route::get('/', [CheckupController::class, 'test']);
 
 Route::post('/changeLang', [CheckupController::class, 'changeLang']);
 Route::post('/checkLocation', [CheckupController::class, 'checkLocation']);
