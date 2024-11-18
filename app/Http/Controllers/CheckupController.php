@@ -244,6 +244,7 @@ class CheckupController extends Controller
     }
     public function requestQueue(Request $request)
     {
+        ini_set('max_execution_time', '3');
         $getNumber = RateLimiter::attempt(
             $request->hn,
             $perMinute = 1,
@@ -806,5 +807,101 @@ class CheckupController extends Controller
         }
 
         return view('myApp')->with(compact('hnData', 'myApp'));
+    }
+
+    public function verify()
+    {
+
+        return view('verify');
+    }
+    public function verifyData(Request $request)
+    {
+        $input = $request->input;
+        $html = '';
+        $data = Master::whereDate('check_in', date('Y-m-d'))
+            ->where('hn', $input)
+            ->whereNull('success_by')
+            ->first();
+        if($data !== null){
+            $html .= '<tr>';
+            $html .= '<td class="p-3 border border-gray-600">'.$data->hn.'</td>';
+            $html .= '<td class="p-3 border border-gray-600">'.$data->name.'</td>';
+            $html .= '<td class="p-3 border border-gray-600">'.$data->app.'</td>';
+            $html .= '<td class="p-3 border border-gray-600 text-center text-red-600 font-bold">'.$data->number.'</td>';
+            $html .= '</tr>';
+        }
+        else{
+            $data = DB::connection('SSB')
+                ->table('HNPAT_INFO')
+                ->leftjoin('HNPAT_NAME', 'HNPAT_INFO.HN', '=', 'HNPAT_NAME.HN')
+                ->leftjoin('HNPAT_REF', 'HNPAT_INFO.HN', '=', 'HNPAT_REF.HN')
+                ->leftjoin('HNPAT_ADDRESS', 'HNPAT_INFO.HN', '=', 'HNPAT_ADDRESS.HN')
+                ->whereNull('HNPAT_INFO.FileDeletedDate')
+                ->where('HNPAT_ADDRESS.SuffixTiny', 1)
+                ->where('HNPAT_NAME.SuffixSmall', 0)
+                ->where(function ($query) use ($input) {
+                    $query->where('HNPAT_REF.RefNo', $input)
+                        ->orwhere('HNPAT_INFO.HN', $input)
+                        ->orwhere('HNPAT_ADDRESS.MobilePhone', $input);
+                })
+                ->select(
+                    'HNPAT_INFO.HN',
+                    'HNPAT_INFO.BirthDateTime',
+                    'HNPAT_NAME.FirstName',
+                    'HNPAT_NAME.LastName',
+                )
+                ->groupBy(
+                    'HNPAT_INFO.HN',
+                    'HNPAT_INFO.BirthDateTime',
+                    'HNPAT_NAME.FirstName',
+                    'HNPAT_NAME.LastName',
+                )
+                ->get();
+            if(count($data) > 0){
+                foreach ($data as $row) {
+                    $data = Master::whereDate('check_in', date('Y-m-d'))
+                        ->where('hn', $row->HN)
+                        ->whereNull('success_by')
+                        ->first();
+                    if($data !== null){
+                        $html .= '<tr>';
+                        $html .= '<td class="p-3 border border-gray-600">'.$data->hn.'</td>';
+                        $html .= '<td class="p-3 border border-gray-600">'.$data->name.'</td>';
+                        $html .= '<td class="p-3 border border-gray-600">'.$data->app.'</td>';
+                        $html .= '<td class="p-3 border border-gray-600 text-center text-red-600 font-bold">'.$data->number.'</td>';
+                        $html .= '</tr>';
+                    }else{
+                        $name = $this->formatName($row->FirstName, $row->LastName);
+                        $app = DB::connection('SSB')->table('HNAPPMNT_HEADER')
+                                ->whereDate('HNAPPMNT_HEADER.AppointDateTime', date('Y-m-d'))
+                                ->where('HNAPPMNT_HEADER.Clinic', '1800')
+                                ->where('HNAPPMNT_HEADER.HN', $row->HN)
+                                ->first();
+                                
+                        $html .= '<tr>';
+                        $html .= '<td class="p-3 border border-gray-600">'.$row->HN.'</td>';
+                        $html .= '<td class="p-3 border border-gray-600">'.$name.'</td>';
+                        if($app == null){
+                            $html .= '<td class="p-3 border border-gray-600 text-red-600">ไม่มีนัด</td>';
+                            $html .= '<td class="p-3 border border-gray-600 text-center"><div class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer" onclick="selectItem(\'' . $row->HN . '\',\'M\')">รับคิว</div></td>';
+                        }else{
+                            $html .= '<td class="p-3 border border-gray-600 text-red-600">'.$app->AppointmentNo.'</td>';
+                            $html .= '<td class="p-3 border border-gray-600 text-center"><div class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer" onclick="selectItem(\'' . $row->HN . '\',\'M\')">รับคิว</div></td>';
+                        }
+                        $html .= '</tr>';
+                    }
+                }
+            }else{
+                $html .= '<tr>';
+                $html .= '<td class="p-3 border border-gray-600">'.$input.'</td>';
+                $html .= '<td class="p-3 border border-gray-600">walkin</td>';
+                $html .= '<td class="p-3 border border-gray-600"></td>';
+                $html .= '<td class="p-3 border border-gray-600"><div id="sleItem" onclick="selectItem(\'walkin' . $input . '\',\'M\')" class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer" >รับคิว</div></td>';
+                $html .= '</tr>';
+            }
+
+        }
+
+        return response()->json(['status' => 'success', 'result' => $html], 200);
     }
 }

@@ -5,6 +5,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CheckupController::class, 'test']);
 
+Route::get('/verify', [CheckupController::class, 'verify']);
+Route::post('/verify/data', [CheckupController::class, 'verifyData']);
+
 Route::post('/changeLang', [CheckupController::class, 'changeLang']);
 Route::post('/checkLocation', [CheckupController::class, 'checkLocation']);
 
