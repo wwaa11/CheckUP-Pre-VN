@@ -73,7 +73,10 @@
                         "Content-Type": "multipart/form-data"
                     }).then((res) => {
                         swal.close()
-                        search();
+                        setTimeout(function() {
+                            search()
+                        }, 3000);
+
                     }).catch(function(error) {
                         Swal.fire({
                             title: 'Error',
@@ -83,7 +86,9 @@
                             allowEscapeKey: false,
                             showConfirmButton: true
                         });
-                        search();
+                        setTimeout(function() {
+                            search()
+                        }, 3000);
                     });
                 }
             });

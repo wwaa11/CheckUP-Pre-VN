@@ -94,8 +94,6 @@
                 allowEscapeKey: false,
                 showConfirmButton: false
             });
-            // wait = [1000, 1200, 1500, 1800, 2000].random()
-            // await sleep(wait)
 
             const formData = new FormData();
             formData.append('hn', hn);

@@ -10,6 +10,7 @@ use DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
+use App\Jobs\ProcessGenerateQueue;
 
 class CheckupController extends Controller
 {
@@ -19,7 +20,12 @@ class CheckupController extends Controller
     {
         
     }
+    public function dispatchGenerate()
+    {
+        ProcessGenerateQueue::dispatch();
 
+        return response()->json('success', 200);
+    }
     private function lang($text)
     {
         if (session("langSelect") == 'ENG') {
@@ -269,40 +275,31 @@ class CheckupController extends Controller
                 // Check Walkin
                 if ($iswalkinNodata == 1) {
                     // Get Queue M
-                    $queueNumber = $this->genQueue('M', $hn);
-                    if($queueNumber == 'duplicate'){
-
-                        return 'duplicate';
-                    }
                     $master = new Master;
-                    $master->app = $queueNumber;
+                    $master->app = null;
                     $master->check_in = date('Y-m-d H:i:s');
                     $master->hn = $hn;
                     $master->name = 'Walkin';
                     $master->lang = (session("langSelect") == "TH") ? 1 : 2;
-                    $master->number = $queueNumber;
+                    $master->number = null;
+                    $master->type = 'M';
                     $master->add_time = date('H:i');
                     $master->save();
                 } else {
-                    // Check Appointment
                     $startQuery = date('Y-m-d H:i:s');
 
                     Log::channel('daily')->notice($hn . ' Query : Start : '.date('Y-m-d H:i:s') );
                     $hnDetail = DB::connection('SSB')
                         ->table('HNPAT_INFO')
-                        // ->leftjoin('HNPAT_NAME', 'HNPAT_INFO.HN', '=', 'HNPAT_NAME.HN')
                         ->leftjoin('HNPAT_REF', 'HNPAT_INFO.HN', '=', 'HNPAT_REF.HN')
                         ->leftjoin('HNPAT_ADDRESS', 'HNPAT_INFO.HN', '=', 'HNPAT_ADDRESS.HN')
                         ->whereNull('HNPAT_INFO.FileDeletedDate')
                         ->where('HNPAT_INFO.HN', $hn)
                         ->where('HNPAT_ADDRESS.SuffixTiny', 1)
-                        // ->where('HNPAT_NAME.SuffixSmall', 0)
                         ->select(
                             'HNPAT_INFO.HN',
                             'HNPAT_INFO.BirthDateTime',
                             'HNPAT_INFO.NationalityCode',
-                            // 'HNPAT_NAME.FirstName',
-                            // 'HNPAT_NAME.LastName',
                             'HNPAT_REF.RefNo',
                             'HNPAT_ADDRESS.MobilePhone'
                         )
@@ -332,20 +329,16 @@ class CheckupController extends Controller
                     }
 
                     Log::channel('daily')->notice($hn.' Query : Success : '.date('Y-m-d H:i:s') );
-                    if ($myApp == null) // No Appointment get queue M
+                    if ($myApp == null)
                     {
-                        $queueNumber = $this->genQueue('M', $hn);
-                        if($queueNumber == 'duplicate'){
-
-                            return 'duplicate';
-                        }
                         $master = new Master;
-                        $master->app = 'WALKIN_' . $queueNumber;
+                        $master->app = 'WALKIN';
                         $master->check_in = date('Y-m-d H:i:s');
                         $master->hn = $hn;
                         $master->name = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
                         $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
-                        $master->number = $queueNumber;
+                        $master->number = null;
+                        $master->type = 'M';
                         $master->add_time = date('H:i');
                         $master->dob = $hnDetail->BirthDateTime;
                         $master->save();
@@ -384,11 +377,6 @@ class CheckupController extends Controller
                                     break;
                             }
                         }
-                        $queueNumber = $this->genQueue($code, $hn);
-                        if($queueNumber == 'duplicate'){
-
-                            return 'duplicate';
-                        }
 
                         $master = new Master;
                         $master->app = $myApp->AppointmentNo;
@@ -396,14 +384,15 @@ class CheckupController extends Controller
                         $master->hn = $hn;
                         $master->name = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
                         $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
-                        $master->number = $queueNumber;
+                        $master->number = null;
+                        $master->type = $code;
                         $master->add_time = date('H:i');
                         $master->dob = $hnDetail->BirthDateTime;
                         $master->save();
                     }
                 }
 
-                return $queueNumber; 
+                return 'created master'; 
             }
         );
         if (! $getNumber) {
@@ -421,10 +410,15 @@ class CheckupController extends Controller
 
             return response()->json('Please, try again!', 409);
         }
+        else if($getNumber == 'created master'){
+            Log::channel('daily')->notice($request->hn . ' request duplicate Skip.');
+
+            return response()->json('Created transcation success!', 200);
+        }
         else{
             Log::channel('daily')->notice($request->hn . ' request success.');
 
-            return response()->json('success Queue Number :' . $getNumber, 200);
+            return response()->json('Unknow Error!', 500);
         }
     }
 
