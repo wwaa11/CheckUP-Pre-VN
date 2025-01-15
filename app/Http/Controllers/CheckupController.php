@@ -215,21 +215,21 @@ class CheckupController extends Controller
         return response()->json(['status' => 'success', 'html' => $html], 200);
     }
 
-    public function genQueue($typeQueue)
+    public function genQueue($typeQueue, $hn)
     {
-        $getNumber = Number::where('date', date('Y-m-d'))->first();
+        $getNumber = Number::where('date', date('Y-m-d'))->lockForUpdate()->first();
         if ($getNumber == null) {
             $newDate = new Number;
             $newDate->date = date('Y-m-d');
             $newDate->save();
-            $getNumber = Number::where('date', date('Y-m-d'))->first();
+            $getNumber = Number::where('date', date('Y-m-d'))->lockForUpdate()->first();
         }
         $number = $getNumber->$typeQueue + 1;
         $queueNumber = $typeQueue . str_pad($number, 3, '0', STR_PAD_LEFT);
         $getNumber->$typeQueue = $number;
         $getNumber->save();
 
-        Log::channel('daily')->notice('prepare ' . $queueNumber . ' to ' . $typeQueue);
+        Log::channel('daily')->notice($hn.' prepare ' . $queueNumber . ' to ' . $typeQueue);
         $arrayQueue = Time::where('station', 'checkup')->where('type', $typeQueue)->first();
         $arrayQueue->list = json_decode($arrayQueue->list);
         $temp_list = $arrayQueue->list;
@@ -237,20 +237,24 @@ class CheckupController extends Controller
             array_push($temp_list, $queueNumber);
             $arrayQueue->list = json_encode($temp_list);
             $arrayQueue->save();
-            Log::channel('daily')->notice('insert ' . $queueNumber . ' to ' . $typeQueue);
+            Log::channel('daily')->notice($hn.' success ' . $queueNumber . ' to ' . $typeQueue);
+        }else{
+            Log::channel('daily')->notice($hn.' err ' . $queueNumber . ' alerdy in ' . $typeQueue);
+
+            return 'duplicate';
         }
 
         return $queueNumber;
     }
     public function requestQueue(Request $request)
     {
-        ini_set('max_execution_time', '3');
+        ini_set('max_execution_time', '10');
+        Log::channel('daily')->notice($request->hn . ' request ' . $request->headers->get('referer'));
         $getNumber = RateLimiter::attempt(
             $request->hn,
-            $perMinute = 1,
+            5,
             function() use ($request) {
                 $hn = $request->hn;
-                Log::channel('daily')->notice($hn . ' ' . $request->headers->get('referer'));
                 $iswalkinNodata = 0;
                 if (substr($hn, 0, 6) == "walkin") {
                     $hn = substr($hn, 6);
@@ -265,8 +269,11 @@ class CheckupController extends Controller
                 // Check Walkin
                 if ($iswalkinNodata == 1) {
                     // Get Queue M
-                    $queueNumber = $this->genQueue('M');
+                    $queueNumber = $this->genQueue('M', $hn);
+                    if($queueNumber == 'duplicate'){
 
+                        return 'duplicate';
+                    }
                     $master = new Master;
                     $master->app = $queueNumber;
                     $master->check_in = date('Y-m-d H:i:s');
@@ -278,25 +285,35 @@ class CheckupController extends Controller
                     $master->save();
                 } else {
                     // Check Appointment
+                    $startQuery = date('Y-m-d H:i:s');
+
+                    Log::channel('daily')->notice($hn . ' Query : Start : '.date('Y-m-d H:i:s') );
                     $hnDetail = DB::connection('SSB')
                         ->table('HNPAT_INFO')
-                        ->leftjoin('HNPAT_NAME', 'HNPAT_INFO.HN', '=', 'HNPAT_NAME.HN')
+                        // ->leftjoin('HNPAT_NAME', 'HNPAT_INFO.HN', '=', 'HNPAT_NAME.HN')
                         ->leftjoin('HNPAT_REF', 'HNPAT_INFO.HN', '=', 'HNPAT_REF.HN')
                         ->leftjoin('HNPAT_ADDRESS', 'HNPAT_INFO.HN', '=', 'HNPAT_ADDRESS.HN')
                         ->whereNull('HNPAT_INFO.FileDeletedDate')
                         ->where('HNPAT_INFO.HN', $hn)
                         ->where('HNPAT_ADDRESS.SuffixTiny', 1)
-                        ->where('HNPAT_NAME.SuffixSmall', 0)
+                        // ->where('HNPAT_NAME.SuffixSmall', 0)
                         ->select(
                             'HNPAT_INFO.HN',
                             'HNPAT_INFO.BirthDateTime',
                             'HNPAT_INFO.NationalityCode',
-                            'HNPAT_NAME.FirstName',
-                            'HNPAT_NAME.LastName',
+                            // 'HNPAT_NAME.FirstName',
+                            // 'HNPAT_NAME.LastName',
                             'HNPAT_REF.RefNo',
                             'HNPAT_ADDRESS.MobilePhone'
                         )
                         ->first();
+                    Log::channel('daily')->notice($hn . ' -> : Info Success : '.date('Y-m-d H:i:s') );
+
+                    $hnpatName = DB::connection('SSB')
+                        ->table('HNPAT_NAME')
+                        ->where('HNPAT_NAME.HN', $hn)
+                        ->first();
+                    Log::channel('daily')->notice($hn . ' -> : Name Success : '.date('Y-m-d H:i:s') );
 
                     $myApp = DB::connection('SSB')
                         ->table('HNAPPMNT_HEADER')
@@ -305,16 +322,28 @@ class CheckupController extends Controller
                         ->where('HNAPPMNT_HEADER.HN', $hn)
                         ->orderBy('HNAPPMNT_HEADER.AppointDateTime', 'ASC')
                         ->first();
+                    Log::channel('daily')->notice($hn . ' -> : Appointment Success : '.date('Y-m-d H:i:s') );
 
+                    $endQuery = date('Y-m-d H:i:s');
+                    if($startQuery !== $endQuery){
+                        Log::channel('daily')->notice($hn . ' Query Slow :SKIP : '.date('Y-m-d H:i:s') );
+                        
+                        return 'slow';
+                    }
+
+                    Log::channel('daily')->notice($hn.' Query : Success : '.date('Y-m-d H:i:s') );
                     if ($myApp == null) // No Appointment get queue M
                     {
-                        $queueNumber = $this->genQueue('M');
+                        $queueNumber = $this->genQueue('M', $hn);
+                        if($queueNumber == 'duplicate'){
 
+                            return 'duplicate';
+                        }
                         $master = new Master;
                         $master->app = 'WALKIN_' . $queueNumber;
                         $master->check_in = date('Y-m-d H:i:s');
                         $master->hn = $hn;
-                        $master->name = $this->formatName($hnDetail->FirstName, $hnDetail->LastName);
+                        $master->name = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
                         $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
                         $master->number = $queueNumber;
                         $master->add_time = date('H:i');
@@ -355,13 +384,17 @@ class CheckupController extends Controller
                                     break;
                             }
                         }
-                        $queueNumber = $this->genQueue($code);
+                        $queueNumber = $this->genQueue($code, $hn);
+                        if($queueNumber == 'duplicate'){
+
+                            return 'duplicate';
+                        }
 
                         $master = new Master;
                         $master->app = $myApp->AppointmentNo;
                         $master->check_in = date('Y-m-d H:i:s');
                         $master->hn = $hn;
-                        $master->name = $this->formatName($hnDetail->FirstName, $hnDetail->LastName);
+                        $master->name = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
                         $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
                         $master->number = $queueNumber;
                         $master->add_time = date('H:i');
@@ -374,9 +407,22 @@ class CheckupController extends Controller
             }
         );
         if (! $getNumber) {
+            Log::channel('daily')->notice($request->hn . ' request failed. Too many request.');
 
             return response()->json('too many request :' , 429);
-        }else{
+        }
+        else if($getNumber == 'slow'){
+            Log::channel('daily')->notice($request->hn . ' request Skip.');
+
+            return response()->json('Server slightly slow, please try again!', 409);
+        }
+        else if($getNumber == 'duplicate'){
+            Log::channel('daily')->notice($request->hn . ' request duplicate Skip.');
+
+            return response()->json('Please, try again!', 409);
+        }
+        else{
+            Log::channel('daily')->notice($request->hn . ' request success.');
 
             return response()->json('success Queue Number :' . $getNumber, 200);
         }
@@ -877,7 +923,7 @@ class CheckupController extends Controller
                                 ->where('HNAPPMNT_HEADER.Clinic', '1800')
                                 ->where('HNAPPMNT_HEADER.HN', $row->HN)
                                 ->first();
-                                
+
                         $html .= '<tr>';
                         $html .= '<td class="p-3 border border-gray-600">'.$row->HN.'</td>';
                         $html .= '<td class="p-3 border border-gray-600">'.$name.'</td>';
