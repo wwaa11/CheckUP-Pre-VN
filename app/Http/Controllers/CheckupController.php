@@ -286,7 +286,7 @@ class CheckupController extends Controller
                     $master->add_time = date('H:i');
                     $master->save();
                 } else {
-                    $startQuery = date('Y-m-d H:i:s');
+                    // $startQuery = date('Y-m-d H:i:s');
 
                     Log::channel('daily')->notice($hn . ' Query : Start : '.date('Y-m-d H:i:s') );
                     $hnDetail = DB::connection('SSB')
@@ -321,12 +321,12 @@ class CheckupController extends Controller
                         ->first();
                     Log::channel('daily')->notice($hn . ' -> : Appointment Success : '.date('Y-m-d H:i:s') );
 
-                    $endQuery = date('Y-m-d H:i:s');
-                    if($startQuery !== $endQuery){
-                        Log::channel('daily')->notice($hn . ' Query Slow :SKIP : '.date('Y-m-d H:i:s') );
+                    // $endQuery = date('Y-m-d H:i:s');
+                    // if($startQuery !== $endQuery){
+                    //     Log::channel('daily')->notice($hn . ' Query Slow :SKIP : '.date('Y-m-d H:i:s') );
                         
-                        return 'slow';
-                    }
+                    //     return 'slow';
+                    // }
 
                     Log::channel('daily')->notice($hn.' Query : Success : '.date('Y-m-d H:i:s') );
                     if ($myApp == null)
@@ -411,7 +411,7 @@ class CheckupController extends Controller
             return response()->json('Please, try again!', 409);
         }
         else if($getNumber == 'created master'){
-            Log::channel('daily')->notice($request->hn . ' request duplicate Skip.');
+            Log::channel('daily')->notice($request->hn . ' request success.');
 
             return response()->json('Created transcation success!', 200);
         }
@@ -867,7 +867,13 @@ class CheckupController extends Controller
             $html .= '<td class="p-3 border border-gray-600">'.$data->hn.'</td>';
             $html .= '<td class="p-3 border border-gray-600">'.$data->name.'</td>';
             $html .= '<td class="p-3 border border-gray-600">'.$data->app.'</td>';
-            $html .= '<td class="p-3 border border-gray-600 text-center text-red-600 font-bold">'.$data->number.'</td>';
+            $html .= '<td class="p-3 border border-gray-600 text-center text-red-600 font-bold">';
+            if($data->number == null){
+                $html .= 'ระบบกำลังสร้างคิว <div>กรุณากด search อีกครั้ง</div>';
+            }else{
+                $html .= $data->number;
+            }
+            $html .= '</td>';
             $html .= '</tr>';
         }
         else{

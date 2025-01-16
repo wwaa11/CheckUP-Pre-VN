@@ -75,7 +75,7 @@
                         swal.close()
                         setTimeout(function() {
                             search()
-                        }, 3000);
+                        }, 1000);
 
                     }).catch(function(error) {
                         Swal.fire({
@@ -88,7 +88,7 @@
                         });
                         setTimeout(function() {
                             search()
-                        }, 3000);
+                        }, 1000);
                     });
                 }
             });

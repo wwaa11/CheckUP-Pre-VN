@@ -34,45 +34,40 @@ class ProcessGenerateQueue implements ShouldQueue
 
     public function handle(): void
     {
-        $hour = (int)date('H');
-        if($hour >= 5 && $hour <= 16){
-            $masters = Master::whereDate('created_at', date('Y-m-d'))
-                ->whereNull('number')
-                ->orderBy('check_in', 'asc')
-                ->get();
+        $masters = Master::whereDate('created_at', date('Y-m-d'))
+            ->whereNull('number')
+            ->orderBy('check_in', 'asc')
+            ->get();
 
-            foreach($masters as $item){
+        foreach($masters as $item){
+            $getNumber = Number::where('date', date('Y-m-d'))->first();
+            if ($getNumber == null) {
+                $newDate = new Number;
+                $newDate->date = date('Y-m-d');
+                $newDate->save();
                 $getNumber = Number::where('date', date('Y-m-d'))->first();
-                if ($getNumber == null) {
-                    $newDate = new Number;
-                    $newDate->date = date('Y-m-d');
-                    $newDate->save();
-                    $getNumber = Number::where('date', date('Y-m-d'))->first();
-                }
-                $type = $item->type;
-                $number = $getNumber->$type + 1;
-                $queueNumber = $type . str_pad($number, 3, '0', STR_PAD_LEFT);
-                $getNumber->$type = $number;
-                $getNumber->save();
-
-                $arrayQueue = Time::where('station', 'checkup')->where('type', $type)->first();
-                $arrayQueue->list = json_decode($arrayQueue->list);
-                $temp_list = $arrayQueue->list;
-                if (!in_array($queueNumber, $temp_list)) {
-                    array_push($temp_list, $queueNumber);
-                    $arrayQueue->list = json_encode($temp_list);
-                    $arrayQueue->save();
-                    Log::channel('daily')->notice($item->hn.' generate ' . $queueNumber . ' to ' . $type);
-
-                    $item->number = $queueNumber;
-                    $item->save();
-                }
             }
+            $type = $item->type;
+            $number = $getNumber->$type + 1;
+            $queueNumber = $type . str_pad($number, 3, '0', STR_PAD_LEFT);
+            $getNumber->$type = $number;
+            $getNumber->save();
 
-            ProcessGenerateQueue::dispatch()->delay(1);
-        }else{
-            ProcessGenerateQueue::dispatch()->delay(60 * 30);
+            $arrayQueue = Time::where('station', 'checkup')->where('type', $type)->first();
+            $arrayQueue->list = json_decode($arrayQueue->list);
+            $temp_list = $arrayQueue->list;
+            if (!in_array($queueNumber, $temp_list)) {
+                array_push($temp_list, $queueNumber);
+                $arrayQueue->list = json_encode($temp_list);
+                $arrayQueue->save();
+                Log::channel('daily')->notice($item->hn.' generate ' . $queueNumber . ' to ' . $type);
+
+                $item->number = $queueNumber;
+                $item->save();
+            }
         }
+        
+        ProcessGenerateQueue::dispatch()->delay(1);
     }
 
     public function failed(?Throwable $exception): void
