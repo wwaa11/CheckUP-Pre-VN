@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Jobs\ProcessGenerateQueue;
+use Illuminate\Support\Facades\Http;
 
 class CheckupController extends Controller
 {
@@ -280,7 +281,7 @@ class CheckupController extends Controller
                     $master->check_in = date('Y-m-d H:i:s');
                     $master->hn = $hn;
                     $master->name = 'Walkin';
-                    $master->lang = (session("langSelect") == "TH") ? 1 : 2;
+                    $master->lang = 2;
                     $master->number = null;
                     $master->type = 'M';
                     $master->add_time = date('H:i');
@@ -579,7 +580,7 @@ class CheckupController extends Controller
     }
     public function walkinOTP(Request $request)
     {
-        $masterHN = $request->input;
+        $masterHN = strip_tags($request->input);
         if ($request->lat == '-' || $request->log == '-') {
 
             return abort(400);
@@ -654,7 +655,7 @@ class CheckupController extends Controller
     public function walkinResult(Request $request)
     {
         // Check OTP
-        $otp = $request->otp;
+        $otp = strip_tags($request->otp);
         $findOTP = OTP::whereDate('sendDate', date('Y-m-d'))->where('id', $request->ref)->first();
         if ($findOTP == null) {
 
@@ -849,14 +850,39 @@ class CheckupController extends Controller
         return view('myApp')->with(compact('hnData', 'myApp'));
     }
 
+    function login()
+    {
+        return view('login');
+    }
+    function auth(Request $request)
+    {
+        $response = Http::withHeaders([
+            'token' => env('API_KEY'),
+        ])->post('http://172.20.1.12/dbstaff/api/auth', [
+            "userid" => $request->user,
+            "password" => $request->password,
+        ]);
+        if ($response['status'] == 1) {
+            session()->put('userid', $request->user);
+            session()->put('name', $response['user']['name']);
+            session()->put('department', $response['user']['department']);
+            session()->put('division', $response['user']['division']);
+        }
+
+        return $response->json();
+    }
     public function verify()
     {
+        if (session('userid') == null) {
+
+            return view('login');
+        }
 
         return view('verify');
     }
     public function verifyData(Request $request)
     {
-        $input = $request->input;
+        $input = strip_tags($request->input);
         $html = '';
         $data = Master::whereDate('check_in', date('Y-m-d'))
             ->where('hn', $input)
