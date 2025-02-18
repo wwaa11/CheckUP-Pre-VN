@@ -24,7 +24,7 @@
                     window.location.href = '{{ env('APP_URL') }}/verify'
                 }else{
                     Swal.fire({
-                        title: res.data.message,
+                        title: res.data.text,
                         icon: "warning",
                         allowOutsideClick: false,
                         allowEscapeKey: false,

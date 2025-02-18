@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Models\Master;
 use App\Models\Number;
 use App\Models\Time;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use App\Jobs\ProcessGenerateQueue;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Auth;
 
 class CheckupController extends Controller
 {
@@ -82,6 +84,9 @@ class CheckupController extends Controller
                 case "cantCheckLocation":
                     $trans_text = "Check Location Error, Please refresh.";
                     break;
+                case "checkup":
+                    $trans_text = "Check UP Center : Building B floor 12.";
+                    break;
                 default:
                     $trans_text = $text;
                     break;
@@ -139,6 +144,9 @@ class CheckupController extends Controller
                 case "cantCheckLocation":
                     $trans_text = "ไม่สามารถเช็คตำแหน่งได้ โปรดลองอีกครั้ง";
                     break;
+                case "checkup":
+                    $trans_text = "ศูนย์ตรวจสุขภาพ : อาคาร B ชั้น 12.";
+                    break;
                 default:
                     $trans_text = $text;
                     break;
@@ -188,7 +196,7 @@ class CheckupController extends Controller
     {
         $hn = $request->hn;
         if ($request->lat == '-' || $request->log == '-') {
-            $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border border-red-600 text-red-600 mt-3">' . $this->lang('cantCheckLocation') . '</div>';
+            $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('cantCheckLocation') . '</div>';
 
             return response()->json(['status' => 'success', 'html' => $html], 200);
         }
@@ -205,18 +213,18 @@ class CheckupController extends Controller
             $outputDistant = $this->latlogCheck($request->lat, $request->log);
 
             if ($outputDistant > $this->LocationDistant) {
-                $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-2 border-red-600 text-red-600 mt-3">';
+                $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">';
                 $html .= '<div>' . $this->lang('not_in_range') . '</div>';
                 $html .= '<div>' . $this->lang('now_range') . ' : ' . round($outputDistant, 1) . ' Km</div>';
                 $html .= '</div>';
             } else {
                 $findAleadry = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
                 ($findAleadry !== null)
-                ? $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-2 border-red-600 text-red-600 mt-3">' . $this->lang('already_queue') . '</div>'
-                : $html = '<div id="sleItem" onclick="selectItem(\'' . $hn . '\')" class="text-center cursor-pointer p-3 font-bold rounded border-2 border-green-600 text-green-600 mt-3">' . $this->lang('get_queue') . '</div>';
+                ? $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('already_queue') . '</div>'
+                : $html = '<div id="sleItem" onclick="selectItem(\'' . $hn . '\')" class="text-center cursor-pointer p-3 font-bold rounded border-green-600 text-yellow-300 mt-3 text-5xl">' . $this->lang('get_queue') . '</div>';
             }
         } else {
-            $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-2 border-red-600 text-red-600 mt-3">' . $this->lang('no_app') . '</div>';
+            $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('no_app') . '</div>';
         }
 
         return response()->json(['status' => 'success', 'html' => $html], 200);
@@ -426,6 +434,7 @@ class CheckupController extends Controller
     public function smsView($hashHN)
     {
         $text = (object) [
+            'checkup' => $this->lang('checkup'),
             'name' => $this->lang('name'),
             'app_no' => $this->lang('app_no'),
             'app_date' => $this->lang('app_date'),
@@ -861,24 +870,36 @@ class CheckupController extends Controller
         ])->post('http://172.20.1.12/dbstaff/api/auth', [
             "userid" => $request->user,
             "password" => $request->password,
-        ]);
-        if ($response['status'] == 1) {
-            session()->put('userid', $request->user);
-            session()->put('name', $response['user']['name']);
-            session()->put('department', $response['user']['department']);
-            session()->put('division', $response['user']['division']);
+        ])->object();
+
+        if ($response->status == 1) {
+            session(['userid' => $response->user->userid , 'name' => $response->user->name]);
+
+            $user = User::firstOrCreate([
+                'userid' => $response->user->userid,
+                'name' => $response->user->name,
+            ]);
+
+            if (Auth::loginUsingId($user->id)) {
+
+                return response()->json(['status' => 1 , 'text' => 'Authentication Success!'],200);
+            }else{
+
+                return response()->json(['status'=> 0,'text'=> 'Authentication Success , User not found!'],200);
+            }
+
         }
 
-        return $response->json();
+        return response()->json(['status' => 0 , 'text' => 'Authentication Failed!'],200);
     }
-    public function verify()
+    public function verify(Request $request)
     {
-        if (session('userid') == null) {
+        if (Auth::check()) {
 
-            return view('login');
+            return view('verify');
         }
 
-        return view('verify');
+        return view('login');
     }
     public function verifyData(Request $request)
     {
