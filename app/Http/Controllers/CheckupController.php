@@ -136,7 +136,7 @@ class CheckupController extends Controller
                     $trans_text = "เช็คนัด";
                     break;
                 case "get_queue":
-                    $trans_text = "รับคิว";
+                    $trans_text = "กดเพื่อรับคิว";
                     break;
                 case "already_queue":
                     $trans_text = "รับคิวไปแล้ว";
@@ -221,7 +221,7 @@ class CheckupController extends Controller
                 $findAleadry = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
                 ($findAleadry !== null)
                 ? $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('already_queue') . '</div>'
-                : $html = '<div id="sleItem" onclick="selectItem(\'' . $hn . '\')" class="text-center cursor-pointer p-3 font-bold rounded border-green-600 text-yellow-300 mt-3 text-5xl">' . $this->lang('get_queue') . '</div>';
+                : $html = '<div class="text-center cursor-pointer p-3 mt-3"><button type="button" onclick="selectItem(\'' . $hn . '\')" class="rounded text-yellow-300 bg-[#37beaf] p-3 w-full md:w-1/2 shadow text-4xl font-bold">' . $this->lang('get_queue') . '</button></div>';
             }
         } else {
             $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('no_app') . '</div>';

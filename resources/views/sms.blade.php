@@ -4,7 +4,7 @@
         .bg-praram9 {
             border-radius: 10px;
             color: #fff;
-            background: rgb(55, 190, 175);
+            background: #37beaf;
             background: linear-gradient(117deg, rgba(55, 190, 175, 1) 0%, rgba(11, 162, 171, 1) 91%);
         }
     </style>
@@ -26,7 +26,12 @@
                     {{ $text->range_check }}
                 </div>
             </div>
-            <div class="text-5xl">&nbsp;</div>
+            <div class="hidden m-auto flex-grow mt-6">
+                <div class="text-center cursor-pointer p-3 mt-3">
+                    <button type="button" class="rounded text-yellow-300 bg-[#37beaf] p-3 w-full md:w-1/2 shadow text-4xl font-bold">TEST</button>
+                </div>
+            </div>
+            {{-- <div class="text-5xl">&nbsp;</div> --}}
         </div>
     </div>
 @endsection
