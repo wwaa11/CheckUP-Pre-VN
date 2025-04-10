@@ -1,19 +1,18 @@
 <?php
-
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Jobs\ProcessGenerateQueue;
 use App\Models\Master;
 use App\Models\Number;
-use App\Models\Time;
 use App\Models\OTP;
+use App\Models\Time;
+use App\Models\User;
 use DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use App\Jobs\ProcessGenerateQueue;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Auth;
 
 class CheckupController extends Controller
 {
@@ -21,7 +20,7 @@ class CheckupController extends Controller
 
     public function test()
     {
-        
+
     }
     public function dispatchGenerate()
     {
@@ -181,13 +180,13 @@ class CheckupController extends Controller
     }
     public function latlogCheck($input_lat, $input_lon)
     {
-        $base_lat = "13.7530601";
-        $base_lon = "100.5688306";
-        $theta = $input_lon - $base_lon;
-        $dist = sin(deg2rad($input_lat)) * sin(deg2rad($base_lat)) + cos(deg2rad($input_lat)) * cos(deg2rad($base_lat)) * cos(deg2rad($theta));
-        $dist = acos($dist);
-        $dist = rad2deg($dist);
-        $miles = $dist * 60 * 1.1515;
+        $base_lat      = "13.7530601";
+        $base_lon      = "100.5688306";
+        $theta         = $input_lon - $base_lon;
+        $dist          = sin(deg2rad($input_lat)) * sin(deg2rad($base_lat)) + cos(deg2rad($input_lat)) * cos(deg2rad($base_lat)) * cos(deg2rad($theta));
+        $dist          = acos($dist);
+        $dist          = rad2deg($dist);
+        $miles         = $dist * 60 * 1.1515;
         $outputDistant = $miles * 1.609344;
 
         return $outputDistant;
@@ -234,27 +233,27 @@ class CheckupController extends Controller
     {
         $getNumber = Number::where('date', date('Y-m-d'))->lockForUpdate()->first();
         if ($getNumber == null) {
-            $newDate = new Number;
+            $newDate       = new Number;
             $newDate->date = date('Y-m-d');
             $newDate->save();
             $getNumber = Number::where('date', date('Y-m-d'))->lockForUpdate()->first();
         }
-        $number = $getNumber->$typeQueue + 1;
-        $queueNumber = $typeQueue . str_pad($number, 3, '0', STR_PAD_LEFT);
+        $number                = $getNumber->$typeQueue + 1;
+        $queueNumber           = $typeQueue . str_pad($number, 3, '0', STR_PAD_LEFT);
         $getNumber->$typeQueue = $number;
         $getNumber->save();
 
-        Log::channel('daily')->notice($hn.' prepare ' . $queueNumber . ' to ' . $typeQueue);
-        $arrayQueue = Time::where('station', 'checkup')->where('type', $typeQueue)->first();
+        Log::channel('daily')->notice($hn . ' prepare ' . $queueNumber . ' to ' . $typeQueue);
+        $arrayQueue       = Time::where('station', 'checkup')->where('type', $typeQueue)->first();
         $arrayQueue->list = json_decode($arrayQueue->list);
-        $temp_list = $arrayQueue->list;
-        if (!in_array($queueNumber, $temp_list)) {
+        $temp_list        = $arrayQueue->list;
+        if (! in_array($queueNumber, $temp_list)) {
             array_push($temp_list, $queueNumber);
             $arrayQueue->list = json_encode($temp_list);
             $arrayQueue->save();
-            Log::channel('daily')->notice($hn.' success ' . $queueNumber . ' to ' . $typeQueue);
-        }else{
-            Log::channel('daily')->notice($hn.' err ' . $queueNumber . ' alerdy in ' . $typeQueue);
+            Log::channel('daily')->notice($hn . ' success ' . $queueNumber . ' to ' . $typeQueue);
+        } else {
+            Log::channel('daily')->notice($hn . ' err ' . $queueNumber . ' alerdy in ' . $typeQueue);
 
             return 'duplicate';
         }
@@ -268,11 +267,11 @@ class CheckupController extends Controller
         $getNumber = RateLimiter::attempt(
             $request->hn,
             5,
-            function() use ($request) {
-                $hn = $request->hn;
+            function () use ($request) {
+                $hn             = $request->hn;
                 $iswalkinNodata = 0;
                 if (substr($hn, 0, 6) == "walkin") {
-                    $hn = substr($hn, 6);
+                    $hn             = substr($hn, 6);
                     $iswalkinNodata = 1;
                 }
                 $findMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
@@ -284,20 +283,20 @@ class CheckupController extends Controller
                 // Check Walkin
                 if ($iswalkinNodata == 1) {
                     // Get Queue M
-                    $master = new Master;
-                    $master->app = null;
+                    $master           = new Master;
+                    $master->app      = null;
                     $master->check_in = date('Y-m-d H:i:s');
-                    $master->hn = $hn;
-                    $master->name = 'Walkin';
-                    $master->lang = 2;
-                    $master->number = null;
-                    $master->type = 'M';
+                    $master->hn       = $hn;
+                    $master->name     = 'Walkin';
+                    $master->lang     = 2;
+                    $master->number   = null;
+                    $master->type     = 'M';
                     $master->add_time = date('H:i');
                     $master->save();
                 } else {
                     // $startQuery = date('Y-m-d H:i:s');
 
-                    Log::channel('daily')->notice($hn . ' Query : Start : '.date('Y-m-d H:i:s') );
+                    Log::channel('daily')->notice($hn . ' Query : Start : ' . date('Y-m-d H:i:s'));
                     $hnDetail = DB::connection('SSB')
                         ->table('HNPAT_INFO')
                         ->leftjoin('HNPAT_REF', 'HNPAT_INFO.HN', '=', 'HNPAT_REF.HN')
@@ -313,13 +312,13 @@ class CheckupController extends Controller
                             'HNPAT_ADDRESS.MobilePhone'
                         )
                         ->first();
-                    Log::channel('daily')->notice($hn . ' -> : Info Success : '.date('Y-m-d H:i:s') );
+                    Log::channel('daily')->notice($hn . ' -> : Info Success : ' . date('Y-m-d H:i:s'));
 
                     $hnpatName = DB::connection('SSB')
                         ->table('HNPAT_NAME')
                         ->where('HNPAT_NAME.HN', $hn)
                         ->first();
-                    Log::channel('daily')->notice($hn . ' -> : Name Success : '.date('Y-m-d H:i:s') );
+                    Log::channel('daily')->notice($hn . ' -> : Name Success : ' . date('Y-m-d H:i:s'));
 
                     $myApp = DB::connection('SSB')
                         ->table('HNAPPMNT_HEADER')
@@ -328,28 +327,27 @@ class CheckupController extends Controller
                         ->where('HNAPPMNT_HEADER.HN', $hn)
                         ->orderBy('HNAPPMNT_HEADER.AppointDateTime', 'ASC')
                         ->first();
-                    Log::channel('daily')->notice($hn . ' -> : Appointment Success : '.date('Y-m-d H:i:s') );
+                    Log::channel('daily')->notice($hn . ' -> : Appointment Success : ' . date('Y-m-d H:i:s'));
 
                     // $endQuery = date('Y-m-d H:i:s');
                     // if($startQuery !== $endQuery){
                     //     Log::channel('daily')->notice($hn . ' Query Slow :SKIP : '.date('Y-m-d H:i:s') );
-                        
+
                     //     return 'slow';
                     // }
 
-                    Log::channel('daily')->notice($hn.' Query : Success : '.date('Y-m-d H:i:s') );
-                    if ($myApp == null)
-                    {
-                        $master = new Master;
-                        $master->app = 'WALKIN';
+                    Log::channel('daily')->notice($hn . ' Query : Success : ' . date('Y-m-d H:i:s'));
+                    if ($myApp == null) {
+                        $master           = new Master;
+                        $master->app      = 'WALKIN';
                         $master->check_in = date('Y-m-d H:i:s');
-                        $master->hn = $hn;
-                        $master->name = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
-                        $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
-                        $master->number = null;
-                        $master->type = 'M';
+                        $master->hn       = $hn;
+                        $master->name     = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
+                        $master->lang     = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
+                        $master->number   = null;
+                        $master->type     = 'M';
                         $master->add_time = date('H:i');
-                        $master->dob = $hnDetail->BirthDateTime;
+                        $master->dob      = $hnDetail->BirthDateTime;
                         $master->save();
                     } else // Get Appoint
                     {
@@ -357,7 +355,7 @@ class CheckupController extends Controller
                         if (in_array($myApp->AppmntProcedureCode1, $queueU) || in_array($myApp->AppmntProcedureCode2, $queueU) || in_array($myApp->AppmntProcedureCode3, $queueU) || in_array($myApp->AppmntProcedureCode4, $queueU) || in_array($myApp->AppmntProcedureCode5, $queueU)) {
                             $code = 'U';
                         } else {
-                            $time = strtotime($myApp->AppointDateTime);
+                            $time  = strtotime($myApp->AppointDateTime);
                             $hours = date('H', $time);
                             switch ($hours) {
                                 case '7':
@@ -378,6 +376,9 @@ class CheckupController extends Controller
                                 case '12':
                                     $code = 'H';
                                     break;
+                                case '13':
+                                    $code = 'V';
+                                    break;
                                 case 'U':
                                     $code = 'U';
                                     break;
@@ -387,44 +388,40 @@ class CheckupController extends Controller
                             }
                         }
 
-                        $master = new Master;
-                        $master->app = $myApp->AppointmentNo;
+                        $master           = new Master;
+                        $master->app      = $myApp->AppointmentNo;
                         $master->check_in = date('Y-m-d H:i:s');
-                        $master->hn = $hn;
-                        $master->name = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
-                        $master->lang = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
-                        $master->number = null;
-                        $master->type = $code;
+                        $master->hn       = $hn;
+                        $master->name     = $this->formatName($hnpatName->FirstName, $hnpatName->LastName);
+                        $master->lang     = ($hnDetail->NationalityCode == 'THA') ? 1 : 2;
+                        $master->number   = null;
+                        $master->type     = $code;
                         $master->add_time = date('H:i');
-                        $master->dob = $hnDetail->BirthDateTime;
+                        $master->dob      = $hnDetail->BirthDateTime;
                         $master->save();
                     }
                 }
 
-                return 'created master'; 
+                return 'created master';
             }
         );
         if (! $getNumber) {
             Log::channel('daily')->notice($request->hn . ' request failed. Too many request.');
 
-            return response()->json('too many request :' , 429);
-        }
-        else if($getNumber == 'slow'){
+            return response()->json('too many request :', 429);
+        } else if ($getNumber == 'slow') {
             Log::channel('daily')->notice($request->hn . ' request Skip.');
 
             return response()->json('Server slightly slow, please try again!', 409);
-        }
-        else if($getNumber == 'duplicate'){
+        } else if ($getNumber == 'duplicate') {
             Log::channel('daily')->notice($request->hn . ' request duplicate Skip.');
 
             return response()->json('Please, try again!', 409);
-        }
-        else if($getNumber == 'created master'){
+        } else if ($getNumber == 'created master') {
             Log::channel('daily')->notice($request->hn . ' request success.');
 
             return response()->json('Created transcation success!', 200);
-        }
-        else{
+        } else {
             Log::channel('daily')->notice($request->hn . ' request success.');
 
             return response()->json('Unknow Error!', 500);
@@ -434,11 +431,11 @@ class CheckupController extends Controller
     public function smsView($hashHN)
     {
         $text = (object) [
-            'checkup' => $this->lang('checkup'),
-            'name' => $this->lang('name'),
-            'app_no' => $this->lang('app_no'),
-            'app_date' => $this->lang('app_date'),
-            'app_time' => $this->lang('app_time'),
+            'checkup'     => $this->lang('checkup'),
+            'name'        => $this->lang('name'),
+            'app_no'      => $this->lang('app_no'),
+            'app_date'    => $this->lang('app_date'),
+            'app_time'    => $this->lang('app_time'),
             'range_check' => $this->lang('range_check'),
         ];
 
@@ -480,9 +477,9 @@ class CheckupController extends Controller
             ->first();
         if ($hnDetail == null) {
             $hnDetail = (object) [
-                'name' => 'No Data',
-                'HN' => $hn,
-                'appNo' => 'No Data',
+                'name'    => 'No Data',
+                'HN'      => $hn,
+                'appNo'   => 'No Data',
                 'appDate' => 'No Data',
                 'appTime' => 'No Data',
             ];
@@ -502,12 +499,12 @@ class CheckupController extends Controller
             ->first();
 
         if ($myApp !== null) {
-            $strTime = strtotime($myApp->AppointDateTime);
-            $hnDetail->appNo = $myApp->AppointmentNo;
+            $strTime           = strtotime($myApp->AppointDateTime);
+            $hnDetail->appNo   = $myApp->AppointmentNo;
             $hnDetail->appDate = date('d M Y', $strTime);
             $hnDetail->appTime = date('H', $strTime) . ':00';
         } else {
-            $hnDetail->appNo = $this->lang('no_app');
+            $hnDetail->appNo   = $this->lang('no_app');
             $hnDetail->appDate = date('d M Y');
             $hnDetail->appTime = '-';
         }
@@ -522,7 +519,7 @@ class CheckupController extends Controller
         $data = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
         if ($data == null) {
 
-            return redirect(env('APP_URL').'/walkin');
+            return redirect(env('APP_URL') . '/walkin');
         }
 
         return view('myQueue')->with(compact('data'));
@@ -531,11 +528,11 @@ class CheckupController extends Controller
     public function genOTP()
     {
         $characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        $otp_ref = $characters[rand(0, strlen($characters) - 1)] . mt_rand(100, 999);
-        $otp_code = mt_rand(100000, 999999);
+        $otp_ref    = $characters[rand(0, strlen($characters) - 1)] . mt_rand(100, 999);
+        $otp_code   = mt_rand(100000, 999999);
 
         $result = (object) [
-            'ref' => $otp_ref,
+            'ref'  => $otp_ref,
             'code' => $otp_code,
         ];
 
@@ -544,35 +541,35 @@ class CheckupController extends Controller
     public function sendSMS($phone, $ref, $code)
     {
         $field = '{"destination": "' . $phone . '","country": "TH","clientMessageId": "SMS-001","text": "Your OTP =' . $code . '(Ref. Code:' . $ref . ') Do not disclose this OTP with anyone.","scheduled": null}';
-        $curl = curl_init();
+        $curl  = curl_init();
         curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, false);
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, false);
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://192.168.99.6:8090/api/8x8/sms/sendSMS',
+        curl_setopt_array($curl, [
+            CURLOPT_URL            => 'https://192.168.99.6:8090/api/8x8/sms/sendSMS',
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
+            CURLOPT_ENCODING       => '',
+            CURLOPT_MAXREDIRS      => 10,
+            CURLOPT_TIMEOUT        => 0,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => $field,
-            CURLOPT_HTTPHEADER => array(
-                'API_KEY: '.env('API_SMS').'',
+            CURLOPT_HTTP_VERSION   => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST  => 'POST',
+            CURLOPT_POSTFIELDS     => $field,
+            CURLOPT_HTTPHEADER     => [
+                'API_KEY: ' . env('API_SMS') . '',
                 'Content-Type: application/json',
-            ),
-        ));
+            ],
+        ]);
         $response = curl_exec($curl);
         curl_close($curl);
     }
     public function walkinSendOTP(Request $request)
     {
-        $genOTP = $this->genOTP();
-        $findOTP = OTP::find($request->ref_id);
+        $genOTP                       = $this->genOTP();
+        $findOTP                      = OTP::find($request->ref_id);
         ($findOTP == null) ? $findOTP = new OTP : null;
-        $findOTP->ref = $genOTP->ref;
-        $findOTP->code = $genOTP->code;
-        $findOTP->sendDate = date('Y-m-d H:i:s');
+        $findOTP->ref                 = $genOTP->ref;
+        $findOTP->code                = $genOTP->code;
+        $findOTP->sendDate            = date('Y-m-d H:i:s');
         $findOTP->save();
 
         $this->sendSMS($findOTP->phone, $findOTP->ref, $findOTP->code);
@@ -624,19 +621,19 @@ class CheckupController extends Controller
             if ($getHN->MobilePhone !== null) {
                 $genOTP = $this->genOTP();
 
-                $findOTP = OTP::where('phone', $getHN->MobilePhone)->first();
+                $findOTP                      = OTP::where('phone', $getHN->MobilePhone)->first();
                 ($findOTP == null) ? $findOTP = new OTP : null;
-                $findOTP->phone = $getHN->MobilePhone;
-                $findOTP->ref = '-';
-                $findOTP->code = $genOTP->code;
-                $findOTP->sendDate = date('Y-m-d H:i:s');
+                $findOTP->phone               = $getHN->MobilePhone;
+                $findOTP->ref                 = '-';
+                $findOTP->code                = $genOTP->code;
+                $findOTP->sendDate            = date('Y-m-d H:i:s');
                 $findOTP->save();
 
                 return response()->json(['status' => 'success', 'phone' => substr($getHN->MobilePhone, -4), 'refid' => $findOTP->id, 'ref' => '-']);
             }
         }
 
-        $html = '';
+        $html             = '';
         $findWalkinMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $masterHN)->where('name', 'Walkin')->whereNull('success_by')->first();
         if ($findWalkinMaster !== null) {
             $html .= '<div class="shadow m-3 p-3">';
@@ -649,7 +646,7 @@ class CheckupController extends Controller
             $html .= '<span class="mb-2 text-queuenumber text-end">' . $findWalkinMaster->number . '</span>';
             $html .= '</div>';
             $html .= '<a href="walkin/viewqueue/' . $findWalkinMaster->hn . '">';
-            $html .= '<div class="border-2 text-green-600 border-green-600 rounded-l p-2 text-center">'.$this->lang('check').'</div>';
+            $html .= '<div class="border-2 text-green-600 border-green-600 rounded-l p-2 text-center">' . $this->lang('check') . '</div>';
             $html .= '</a>';
             $html .= '</div>';
         } else {
@@ -664,7 +661,7 @@ class CheckupController extends Controller
     public function walkinResult(Request $request)
     {
         // Check OTP
-        $otp = strip_tags($request->otp);
+        $otp     = strip_tags($request->otp);
         $findOTP = OTP::whereDate('sendDate', date('Y-m-d'))->where('id', $request->ref)->first();
         if ($findOTP == null) {
 
@@ -675,7 +672,7 @@ class CheckupController extends Controller
         } else {
             $masterHN = $request->input;
             // Search queue
-            $html = '';
+            $html             = '';
             $findWalkinMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $masterHN)->where('name', 'Walkin')->whereNull('success_by')->first();
             if ($findWalkinMaster !== null) {
                 $html .= '<div class="shadow p-3 m-3">';
@@ -726,10 +723,10 @@ class CheckupController extends Controller
             } else {
                 // Check in Master
                 foreach ($getHN as $item) {
-                    $dob = strtotime($item->BirthDateTime);
-                    $checkMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $item->HN)->whereNull('success_by')->first();
-                    $getHashHN =  DB::connection('SMS')->table('TB_HAS_HN')->where('HN', $item->HN)->first();
-                    ($getHashHN !== null)?$hashHN = $getHashHN->hasHN : $hashHN = $item->HN;
+                    $dob                            = strtotime($item->BirthDateTime);
+                    $checkMaster                    = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $item->HN)->whereNull('success_by')->first();
+                    $getHashHN                      = DB::connection('SMS')->table('TB_HAS_HN')->where('HN', $item->HN)->first();
+                    ($getHashHN !== null) ? $hashHN = $getHashHN->hasHN : $hashHN = $item->HN;
                     if ($checkMaster == null) {
                         $myApp = DB::connection('SSB')
                             ->table('HNAPPMNT_HEADER')
@@ -745,22 +742,22 @@ class CheckupController extends Controller
                         $html .= '<span class="mb-2">' . $this->lang('dob') . '</span>';
                         $html .= '<span class="mb-2">' . date('d M Y', $dob) . ' ( ' . (date('Y', $dob) + 543) . ')' . '</span>';
                         $html .= '<span class="mb-2">' . $this->lang('app_no') . '</span>';
-                        if($myApp !== null){
+                        if ($myApp !== null) {
                             $html .= '<span class="text-end font-bold text-red-600 text-2xl mb-2">' . $myApp->AppointmentNo . '</span>';
-                        }else{
+                        } else {
                             $html .= '<span class="text-end font-bold text-red-600 text-2xl mb-2">' . $this->lang('no_app') . '</span>';
                         }
                         $html .= '</div>';
 
-                        if($myApp == null){
+                        if ($myApp == null) {
                             $html .= '<a href="walkin/viewapp/' . $hashHN . '">';
-                            $html .= '<div class="m-3 border-2 text-blue-600 border-blue-600 rounded-l p-2 text-center cursor-pointer">'. $this->lang('check_app') . '</div>';
+                            $html .= '<div class="m-3 border-2 text-blue-600 border-blue-600 rounded-l p-2 text-center cursor-pointer">' . $this->lang('check_app') . '</div>';
                             $html .= '</a>';
                         }
                         $html .= '<div id="sleItem"';
-                        if($myApp !== null){
+                        if ($myApp !== null) {
                             $html .= 'onclick="selectItem(\'' . $item->HN . '\',\'A\')"';
-                        }else{
+                        } else {
                             $html .= 'onclick="selectItem(\'' . $item->HN . '\',\'M\')"';
                         }
                         $html .= 'class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer">' . $this->lang('get_queue');
@@ -777,7 +774,7 @@ class CheckupController extends Controller
                         $html .= '    <span class="text-end font-bold text-red-600 text-2xl mb-3">' . $checkMaster->number . '</span>';
                         $html .= '  </div>';
                         $html .= '  <a href="walkin/viewqueue/' . $item->HN . '">';
-                        $html .= '  <div class="border-2 text-green-600 border-green-600 rounded-l p-2 text-center">'.$this->lang('check').'</div>';
+                        $html .= '  <div class="border-2 text-green-600 border-green-600 rounded-l p-2 text-center">' . $this->lang('check') . '</div>';
                         $html .= '  </a>';
                         $html .= '</div>';
                     }
@@ -797,7 +794,7 @@ class CheckupController extends Controller
         if ($getHN == null) {
             $hn = $hashHN;
 
-            return redirect(env('APP_URL').'/walkin');
+            return redirect(env('APP_URL') . '/walkin');
         } else {
             $hn = $getHN->HN;
         }
@@ -823,8 +820,8 @@ class CheckupController extends Controller
             ->first();
 
         $hnData->Fullname = $this->lang('name') . ' ' . $this->formatName($hnData->FirstName, $hnData->LastName) . ' ( ' . $hn . ' )';
-        $strTime = strtotime($hnData->BirthDateTime);
-        $hnData->Data = $this->lang('dob') . ' ' . date('d M Y', $strTime) . ' ( ' . (date('Y', $strTime) + 543) . ' ) ';
+        $strTime          = strtotime($hnData->BirthDateTime);
+        $hnData->Data     = $this->lang('dob') . ' ' . date('d M Y', $strTime) . ' ( ' . (date('Y', $strTime) + 543) . ' ) ';
 
         $myApp = DB::connection('SSB')
             ->table('HNAPPMNT_HEADER')
@@ -849,48 +846,48 @@ class CheckupController extends Controller
 
         mb_internal_encoding('UTF-8');
         foreach ($myApp as $item) {
-            $item->DocTH = mb_substr($item->DocTH, 1);
-            $item->DocEN = mb_substr($item->DocEN, 1);
-            $item->ClinicTH = mb_substr($item->ClinicTH, 1);
-            $item->ClinicEN = mb_substr($item->ClinicEN, 1);
+            $item->DocTH      = mb_substr($item->DocTH, 1);
+            $item->DocEN      = mb_substr($item->DocEN, 1);
+            $item->ClinicTH   = mb_substr($item->ClinicTH, 1);
+            $item->ClinicEN   = mb_substr($item->ClinicEN, 1);
             $item->AppStrTime = strtotime($item->AppointDateTime);
         }
 
         return view('myApp')->with(compact('hnData', 'myApp'));
     }
 
-    function login()
+    public function login()
     {
         return view('login');
     }
-    function auth(Request $request)
+    public function auth(Request $request)
     {
         $response = Http::withHeaders([
             'token' => env('API_KEY'),
         ])->post('http://172.20.1.12/dbstaff/api/auth', [
-            "userid" => $request->user,
+            "userid"   => $request->user,
             "password" => $request->password,
         ])->object();
 
         if ($response->status == 1) {
-            session(['userid' => $response->user->userid , 'name' => $response->user->name]);
+            session(['userid' => $response->user->userid, 'name' => $response->user->name]);
 
             $user = User::firstOrCreate([
                 'userid' => $response->user->userid,
-                'name' => $response->user->name,
+                'name'   => $response->user->name,
             ]);
 
             if (Auth::loginUsingId($user->id)) {
 
-                return response()->json(['status' => 1 , 'text' => 'Authentication Success!'],200);
-            }else{
+                return response()->json(['status' => 1, 'text' => 'Authentication Success!'], 200);
+            } else {
 
-                return response()->json(['status'=> 0,'text'=> 'Authentication Success , User not found!'],200);
+                return response()->json(['status' => 0, 'text' => 'Authentication Success , User not found!'], 200);
             }
 
         }
 
-        return response()->json(['status' => 0 , 'text' => 'Authentication Failed!'],200);
+        return response()->json(['status' => 0, 'text' => 'Authentication Failed!'], 200);
     }
     public function verify(Request $request)
     {
@@ -904,26 +901,25 @@ class CheckupController extends Controller
     public function verifyData(Request $request)
     {
         $input = strip_tags($request->input);
-        $html = '';
-        $data = Master::whereDate('check_in', date('Y-m-d'))
+        $html  = '';
+        $data  = Master::whereDate('check_in', date('Y-m-d'))
             ->where('hn', $input)
             ->whereNull('success_by')
             ->first();
-        if($data !== null){
+        if ($data !== null) {
             $html .= '<tr>';
-            $html .= '<td class="p-3 border border-gray-600">'.$data->hn.'</td>';
-            $html .= '<td class="p-3 border border-gray-600">'.$data->name.'</td>';
-            $html .= '<td class="p-3 border border-gray-600">'.$data->app.'</td>';
+            $html .= '<td class="p-3 border border-gray-600">' . $data->hn . '</td>';
+            $html .= '<td class="p-3 border border-gray-600">' . $data->name . '</td>';
+            $html .= '<td class="p-3 border border-gray-600">' . $data->app . '</td>';
             $html .= '<td class="p-3 border border-gray-600 text-center text-red-600 font-bold">';
-            if($data->number == null){
+            if ($data->number == null) {
                 $html .= 'ระบบกำลังสร้างคิว <div>กรุณากด search อีกครั้ง</div>';
-            }else{
+            } else {
                 $html .= $data->number;
             }
             $html .= '</td>';
             $html .= '</tr>';
-        }
-        else{
+        } else {
             $data = DB::connection('SSB')
                 ->table('HNPAT_INFO')
                 ->leftjoin('HNPAT_NAME', 'HNPAT_INFO.HN', '=', 'HNPAT_NAME.HN')
@@ -950,43 +946,43 @@ class CheckupController extends Controller
                     'HNPAT_NAME.LastName',
                 )
                 ->get();
-            if(count($data) > 0){
+            if (count($data) > 0) {
                 foreach ($data as $row) {
                     $data = Master::whereDate('check_in', date('Y-m-d'))
                         ->where('hn', $row->HN)
                         ->whereNull('success_by')
                         ->first();
-                    if($data !== null){
+                    if ($data !== null) {
                         $html .= '<tr>';
-                        $html .= '<td class="p-3 border border-gray-600">'.$data->hn.'</td>';
-                        $html .= '<td class="p-3 border border-gray-600">'.$data->name.'</td>';
-                        $html .= '<td class="p-3 border border-gray-600">'.$data->app.'</td>';
-                        $html .= '<td class="p-3 border border-gray-600 text-center text-red-600 font-bold">'.$data->number.'</td>';
+                        $html .= '<td class="p-3 border border-gray-600">' . $data->hn . '</td>';
+                        $html .= '<td class="p-3 border border-gray-600">' . $data->name . '</td>';
+                        $html .= '<td class="p-3 border border-gray-600">' . $data->app . '</td>';
+                        $html .= '<td class="p-3 border border-gray-600 text-center text-red-600 font-bold">' . $data->number . '</td>';
                         $html .= '</tr>';
-                    }else{
+                    } else {
                         $name = $this->formatName($row->FirstName, $row->LastName);
-                        $app = DB::connection('SSB')->table('HNAPPMNT_HEADER')
-                                ->whereDate('HNAPPMNT_HEADER.AppointDateTime', date('Y-m-d'))
-                                ->where('HNAPPMNT_HEADER.Clinic', '1800')
-                                ->where('HNAPPMNT_HEADER.HN', $row->HN)
-                                ->first();
+                        $app  = DB::connection('SSB')->table('HNAPPMNT_HEADER')
+                            ->whereDate('HNAPPMNT_HEADER.AppointDateTime', date('Y-m-d'))
+                            ->where('HNAPPMNT_HEADER.Clinic', '1800')
+                            ->where('HNAPPMNT_HEADER.HN', $row->HN)
+                            ->first();
 
                         $html .= '<tr>';
-                        $html .= '<td class="p-3 border border-gray-600">'.$row->HN.'</td>';
-                        $html .= '<td class="p-3 border border-gray-600">'.$name.'</td>';
-                        if($app == null){
+                        $html .= '<td class="p-3 border border-gray-600">' . $row->HN . '</td>';
+                        $html .= '<td class="p-3 border border-gray-600">' . $name . '</td>';
+                        if ($app == null) {
                             $html .= '<td class="p-3 border border-gray-600 text-red-600">ไม่มีนัด</td>';
                             $html .= '<td class="p-3 border border-gray-600 text-center"><div class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer" onclick="selectItem(\'' . $row->HN . '\',\'M\')">รับคิว</div></td>';
-                        }else{
-                            $html .= '<td class="p-3 border border-gray-600 text-red-600">'.$app->AppointmentNo.'</td>';
+                        } else {
+                            $html .= '<td class="p-3 border border-gray-600 text-red-600">' . $app->AppointmentNo . '</td>';
                             $html .= '<td class="p-3 border border-gray-600 text-center"><div class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer" onclick="selectItem(\'' . $row->HN . '\',\'M\')">รับคิว</div></td>';
                         }
                         $html .= '</tr>';
                     }
                 }
-            }else{
+            } else {
                 $html .= '<tr>';
-                $html .= '<td class="p-3 border border-gray-600">'.$input.'</td>';
+                $html .= '<td class="p-3 border border-gray-600">' . $input . '</td>';
                 $html .= '<td class="p-3 border border-gray-600">walkin</td>';
                 $html .= '<td class="p-3 border border-gray-600"></td>';
                 $html .= '<td class="p-3 border border-gray-600"><div id="sleItem" onclick="selectItem(\'walkin' . $input . '\',\'M\')" class="m-3 border-2 text-green-600 border-green-600 rounded-l p-2 text-center cursor-pointer" >รับคิว</div></td>';
