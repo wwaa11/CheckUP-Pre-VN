@@ -386,6 +386,10 @@ class CheckupController extends Controller
                                     $code = 'M';
                                     break;
                             }
+
+                            if ($code == 'V' && substr($myApp->AppointmentNo, 0, 3) !== 'VAP') {
+                                $code = "M";
+                            }
                         }
 
                         $master           = new Master;
