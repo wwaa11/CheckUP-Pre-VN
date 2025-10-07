@@ -1,26 +1,27 @@
 #!/usr/bin/env bash
 
+# Set the correct user and group dynamically
+usermod -u "$WWWUSER" sail
+groupmod -g "$WWWGROUP" sail
+
+# Create the .composer directory and ensure correct permissions
+# This prevents "Permission denied" and "No such file" errors
+mkdir -p /home/sail/.composer
+chown -R "$WWWUSER":"$WWWGROUP" /home/sail/.composer
+
+# Set the COMPOSER_HOME environment variable
+export COMPOSER_HOME="/home/sail/.composer"
+
+# Check for a specific PHP user (Supervisor's config)
 if [ "$SUPERVISOR_PHP_USER" != "root" ] && [ "$SUPERVISOR_PHP_USER" != "sail" ]; then
     echo "You should set SUPERVISOR_PHP_USER to either 'sail' or 'root'."
     exit 1
 fi
 
-if [ ! -z "$WWWUSER" ]; then
-    usermod -u $WWWUSER sail
-fi
-
-if [ ! -d /.composer ]; then
-    mkdir /.composer
-fi
-
-chmod -R ugo+rw /.composer
-
+# If arguments are passed, execute the command using gosu
 if [ $# -gt 0 ]; then
-    if [ "$SUPERVISOR_PHP_USER" = "root" ]; then
-        exec "$@"
-    else
-        exec gosu $WWWUSER "$@"
-    fi
+    exec gosu sail "$@"
+# Otherwise, run the default supervisor process
 else
     exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
 fi
