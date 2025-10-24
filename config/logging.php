@@ -158,6 +158,13 @@ return [
             'level'  => 'info',
         ],
 
+        'generate'   => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/Request-service.log'),
+            'days'   => 14,
+            'level'  => 'info',
+        ],
+
     ],
 
 ];
