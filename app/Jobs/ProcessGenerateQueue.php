@@ -49,7 +49,7 @@ class ProcessGenerateQueue implements ShouldQueue, ShouldBeUniqueUntilProcessing
                 array_push($temp_list, $queueNumber);
                 $arrayQueue->list = json_encode($temp_list);
                 $arrayQueue->save();
-                Log::channel('daily')->notice($item->hn . ' generate ' . $queueNumber . ' to ' . $type);
+                Log::channel('request')->info($item->hn . ' generate ' . $queueNumber . ' to ' . $type);
 
                 $item->number = $queueNumber;
                 $item->save();

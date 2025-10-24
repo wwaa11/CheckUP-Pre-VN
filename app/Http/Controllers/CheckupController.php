@@ -219,8 +219,8 @@ class CheckupController extends Controller
             } else {
                 $findAleadry = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
                 ($findAleadry !== null)
-                ? $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('already_queue') . '</div>'
-                : $html = '<div class="text-center cursor-pointer p-3 mt-3"><button type="button" onclick="selectItem(\'' . $hn . '\')" class="rounded text-yellow-300 bg-[#37beaf] p-3 w-full md:w-1/2 shadow text-4xl font-bold">' . $this->lang('get_queue') . '</button></div>';
+                    ? $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('already_queue') . '</div>'
+                    : $html = '<div class="text-center cursor-pointer p-3 mt-3"><button type="button" onclick="selectItem(\'' . $hn . '\')" class="rounded text-yellow-300 bg-[#37beaf] p-3 w-full md:w-1/2 shadow text-4xl font-bold">' . $this->lang('get_queue') . '</button></div>';
             }
         } else {
             $html = '<div class="text-center cursor-pointer p-3 font-bold rounded border-red-600 text-red-600 mt-3 text-3xl">' . $this->lang('no_app') . '</div>';
@@ -243,7 +243,7 @@ class CheckupController extends Controller
         $getNumber->$typeQueue = $number;
         $getNumber->save();
 
-        Log::channel('daily')->notice($hn . ' prepare ' . $queueNumber . ' to ' . $typeQueue);
+        Log::channel('request')->info($hn . ' prepare ' . $queueNumber . ' to ' . $typeQueue);
         $arrayQueue       = Time::where('station', 'checkup')->where('type', $typeQueue)->first();
         $arrayQueue->list = json_decode($arrayQueue->list);
         $temp_list        = $arrayQueue->list;
@@ -251,9 +251,9 @@ class CheckupController extends Controller
             array_push($temp_list, $queueNumber);
             $arrayQueue->list = json_encode($temp_list);
             $arrayQueue->save();
-            Log::channel('daily')->notice($hn . ' success ' . $queueNumber . ' to ' . $typeQueue);
+            Log::channel('request')->info($hn . ' success ' . $queueNumber . ' to ' . $typeQueue);
         } else {
-            Log::channel('daily')->notice($hn . ' err ' . $queueNumber . ' alerdy in ' . $typeQueue);
+            Log::channel('request')->info($hn . ' err ' . $queueNumber . ' alerdy in ' . $typeQueue);
 
             return 'duplicate';
         }
@@ -263,7 +263,7 @@ class CheckupController extends Controller
     public function requestQueue(Request $request)
     {
         ini_set('max_execution_time', '10');
-        Log::channel('daily')->notice($request->hn . ' request ' . $request->headers->get('referer'));
+        Log::channel('request')->info($request->hn . ' request ' . $request->headers->get('referer'));
         $getNumber = RateLimiter::attempt(
             $request->hn,
             5,
@@ -276,7 +276,7 @@ class CheckupController extends Controller
                 }
                 $findMaster = Master::whereDate('check_in', date('Y-m-d'))->where('hn', $hn)->whereNull('success_by')->first();
                 if ($findMaster !== null) {
-                    Log::channel('daily')->notice($hn . ' send ' . $findMaster->number);
+                    Log::channel('request')->info($hn . ' send ' . $findMaster->number);
 
                     return response()->json('success Queue Number :' . $findMaster->number, 200);
                 }
@@ -296,7 +296,7 @@ class CheckupController extends Controller
                 } else {
                     // $startQuery = date('Y-m-d H:i:s');
 
-                    Log::channel('daily')->notice($hn . ' Query : Start : ' . date('Y-m-d H:i:s'));
+                    Log::channel('request')->info($hn . ' Query : Start : ' . date('Y-m-d H:i:s'));
                     $hnDetail = DB::connection('SSB')
                         ->table('HNPAT_INFO')
                         ->leftjoin('HNPAT_REF', 'HNPAT_INFO.HN', '=', 'HNPAT_REF.HN')
@@ -312,13 +312,13 @@ class CheckupController extends Controller
                             'HNPAT_ADDRESS.MobilePhone'
                         )
                         ->first();
-                    Log::channel('daily')->notice($hn . ' -> : Info Success : ' . date('Y-m-d H:i:s'));
+                    Log::channel('request')->info($hn . ' -> : Info Success : ' . date('Y-m-d H:i:s'));
 
                     $hnpatName = DB::connection('SSB')
                         ->table('HNPAT_NAME')
                         ->where('HNPAT_NAME.HN', $hn)
                         ->first();
-                    Log::channel('daily')->notice($hn . ' -> : Name Success : ' . date('Y-m-d H:i:s'));
+                    Log::channel('request')->info($hn . ' -> : Name Success : ' . date('Y-m-d H:i:s'));
 
                     $myApp = DB::connection('SSB')
                         ->table('HNAPPMNT_HEADER')
@@ -327,16 +327,16 @@ class CheckupController extends Controller
                         ->where('HNAPPMNT_HEADER.HN', $hn)
                         ->orderBy('HNAPPMNT_HEADER.AppointDateTime', 'ASC')
                         ->first();
-                    Log::channel('daily')->notice($hn . ' -> : Appointment Success : ' . date('Y-m-d H:i:s'));
+                    Log::channel('request')->info($hn . ' -> : Appointment Success : ' . date('Y-m-d H:i:s'));
 
                     // $endQuery = date('Y-m-d H:i:s');
                     // if($startQuery !== $endQuery){
-                    //     Log::channel('daily')->notice($hn . ' Query Slow :SKIP : '.date('Y-m-d H:i:s') );
+                    //     Log::channel('request')->info($hn . ' Query Slow :SKIP : '.date('Y-m-d H:i:s') );
 
                     //     return 'slow';
                     // }
 
-                    Log::channel('daily')->notice($hn . ' Query : Success : ' . date('Y-m-d H:i:s'));
+                    Log::channel('request')->info($hn . ' Query : Success : ' . date('Y-m-d H:i:s'));
                     if ($myApp == null) {
                         $master           = new Master;
                         $master->app      = 'WALKIN';
@@ -410,23 +410,23 @@ class CheckupController extends Controller
             }
         );
         if (! $getNumber) {
-            Log::channel('daily')->notice($request->hn . ' request failed. Too many request.');
+            Log::channel('request')->info($request->hn . ' request failed. Too many request.');
 
             return response()->json('too many request :', 429);
         } else if ($getNumber == 'slow') {
-            Log::channel('daily')->notice($request->hn . ' request Skip.');
+            Log::channel('request')->info($request->hn . ' request Skip.');
 
             return response()->json('Server slightly slow, please try again!', 409);
         } else if ($getNumber == 'duplicate') {
-            Log::channel('daily')->notice($request->hn . ' request duplicate Skip.');
+            Log::channel('request')->info($request->hn . ' request duplicate Skip.');
 
             return response()->json('Please, try again!', 409);
         } else if ($getNumber == 'created master') {
-            Log::channel('daily')->notice($request->hn . ' request success.');
+            Log::channel('request')->info($request->hn . ' request success.');
 
             return response()->json('Created transcation success!', 200);
         } else {
-            Log::channel('daily')->notice($request->hn . ' request success.');
+            Log::channel('request')->info($request->hn . ' request success.');
 
             return response()->json('Unknow Error!', 500);
         }
