@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Middleware;
 
 use Closure;
@@ -18,12 +17,12 @@ class SecurityHeader
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
-        $csp = "default-src 'self'; 
-        script-src 'self' 'unsafe-inline' https://ajax.cloudflare.com; 
-        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-        img-src 'self';
-        connect-src 'self'; 
-        font-src 'self' https://fonts.gstatic.com/; 
+        $csp      = "default-src 'self';
+        script-src 'self' 'unsafe-inline' https://ajax.cloudflare.com;
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        img-src 'self' https://pr9webhub.praram9.com/;
+        connect-src 'self' https://pr9webhub.praram9.com/;
+        font-src 'self' https://fonts.gstatic.com/;
         frame-src 'self';
         frame-ancestors 'self'";
         $csp = trim(preg_replace('/\s\s+/', ' ', $csp));
