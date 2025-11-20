@@ -10,6 +10,7 @@
     <script src="{{ asset("test/sweetalert2.js") }}"></script>
     <script src="{{ asset("test/jquery.min.js") }}"></script> --}}
     {{-- <link rel="stylesheet" href="{{ asset("font-awesome/css/all.min.css") }}"> --}}
+    <link rel="icon" href="{{ asset("favicon.ico") }}" type="image/x-icon">
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
