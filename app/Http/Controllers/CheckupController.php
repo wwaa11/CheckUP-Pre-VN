@@ -21,6 +21,7 @@ class CheckupController extends Controller
     public function test()
     {
 
+        return view('success');
     }
     public function dispatchGenerate()
     {

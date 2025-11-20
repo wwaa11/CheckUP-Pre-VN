@@ -6,11 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Praram9 CheckUP</title>
-    {{-- <script src="{{ asset('js/axios.min.js') }}"></script> --}}
-    {{-- <script src="{{ asset('js/sweetalert2.js') }}"></script> --}}
-    {{-- <script src="{{ asset('js/jquery.min.js') }}"></script> --}}
+    {{-- <script src="{{ asset("test/axios.min.js") }}"></script>
+    <script src="{{ asset("test/sweetalert2.js") }}"></script>
+    <script src="{{ asset("test/jquery.min.js") }}"></script> --}}
     {{-- <link rel="stylesheet" href="{{ asset("font-awesome/css/all.min.css") }}"> --}}
-    <script src="{{ asset("js/test.js") }}"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -36,7 +35,7 @@
     </div>
     <div class="flex">
         <div class="m-auto text-center">
-            <img width="100" src="{{ asset("images/logo.png") }}">
+            {{-- <img width="100" src="{{ asset("image/logo.png") }}"> --}}
         </div>
     </div>
     @yield("content")

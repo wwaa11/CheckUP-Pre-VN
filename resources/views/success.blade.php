@@ -5,10 +5,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Praram9 CheckUP</title>
-    <script src="{{ asset("js/axios.min.js") }}"></script>
-    <script src="{{ asset("js/sweetalert2.js") }}"></script>
-    <script src="{{ asset("js/jquery.min.js") }}"></script>
+    <title>Services</title>
+    <script src="{{ asset("build/axios.min.js") }}"></script>
+    <script src="{{ asset("test/sweetalert2.js") }}"></script>
+    <script src="{{ asset("test/jquery.min.js") }}"></script>
     <link rel="stylesheet" href="{{ asset("font-awesome/css/all.min.css") }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,7 +22,10 @@
 </head>
 
 <body>
-    <div class="text-center">Error 404 </div>
+    <div class="text-center">Success {{ date("H:i:s") }}</div>
+    <div class="m-auto mt-4 flex h-32 w-32 items-center justify-center bg-red-200">
+        <img src="{{ asset("images/logo.png") }}" alt="">
+    </div>
 </body>
 
 </html>
